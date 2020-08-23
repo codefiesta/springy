@@ -1,0 +1,163 @@
+<html>
+  <head>
+    <title>Springy Console</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js" integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js" integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI" crossorigin="anonymous"></script>
+
+    <script>
+
+      var ws; // The websocket connection
+
+      // Connect to the websocket and start handling socket messages
+      function connect() {
+
+        // Connect to the websocket
+        if (window["WebSocket"]) {
+
+            let socketUrl = "ws://" + document.location.host + "/ws"
+            ws = new WebSocket(socketUrl);
+
+            ws.onopen = function (e) {
+              console.log('Connection opened');
+              $('#btn-connect').removeClass('btn-success').addClass('btn-danger').html('Disconnect');
+            };
+
+            ws.onclose = function (e) {
+              console.log('Connection closed');
+              $('#btn-connect').removeClass('btn-danger').addClass('btn-success').html('Connect');
+            };
+
+            ws.onmessage = function (e) {
+              try {
+                let message = JSON.parse(e.data);
+                handleSocketMessage(message);
+              } catch(err) {
+              }
+            };
+        } else {
+          console.log('Your browser does not support WebSockets.');
+        }
+      }
+
+      // Handle mouse & touch move events and send the messages to our websocket
+      function handleMouseMove(event) {
+           var eventDoc, doc, body;
+           event = event || window.event;
+
+           // Don't send any messages if we aren't connected
+           if (!ws && Object.keys(user).length === 0) {
+             console.log('No connection or user!');
+             return false;
+          }
+
+          // Grab the user's page coordinates in x, y
+          let position = {x: event.pageX, y: event.pageY};
+          let message = {...me, ...position}; // Merge the me & position objects
+          let payload = JSON.stringify(message);
+          ws.send(payload);
+       }
+
+       // For handling touch devices
+       function handleTouchMove(event) {
+
+         let touch = event.touches[0] || event.targetTouches[0];
+         let x = touch.pageX;
+         let y = touch.pageY;
+         // Don't send any messages if we aren't connected
+         if (!ws && Object.keys(user).length === 0) {
+           console.log('No connection or user!');
+           return false;
+        }
+
+        let position = {x: x, y: y};
+        let message = {...me, ...position}; // Merge the me & position objects
+        let payload = JSON.stringify(message);
+        ws.send(payload);
+
+       }
+
+       // Start driving UI events from our socket messages
+       function handleSocketMessage(message) {
+         console.log(message);
+       }
+
+       // Wait for the dom to ready
+       $().ready(function () {
+         // Automatically connect to the socket
+         connect();
+
+         // Join / Leave button
+         $('#btn-connect').click(function(e) {
+           if (ws && ws.readyState === WebSocket.OPEN) {
+             ws.close();
+             return false;
+           }
+           // Connect to the websocket
+           connect();
+         });
+
+         $("#change-stream-form").submit(function( event ) {
+           event.preventDefault();
+           let path = $("#path").val();
+           let changeEvent = $("#change-event").val();
+
+           let message = {
+             path: path,
+             action: "write",
+             operation: changeEvent,
+             value: {
+               name: "Kevin"
+             }
+           };
+
+           let payload = JSON.stringify(message);
+           console.log(payload);
+           ws.send(payload);
+         });
+      });
+    </script>
+  </head>
+
+  <body>
+
+    <div class="container-fluid mt-5">
+        <!-- The Change Stream Form -->
+        <div class="row">
+          <div class="col">
+            <form id="change-stream-form">
+              <div class="form-group">
+
+                <label for="change-event">Change Stream Event</label>
+                <select id="change-event" class="custom-select">
+                  <option value="insert">Insert</option>
+                  <option value="update">Update</option>
+                  <option value="delete">Delete</option>
+                  <option value="replace">Replace</option>
+                </select>
+
+                <label for="path">Change Stream Path</label>
+                <input type="text" class="form-control" id="path" placeholder="path/to/collection" />
+
+              </div>
+              <button type="submit" class="btn btn-primary">Submit</button>
+            </form>
+          </div>
+        </div>
+
+      <!-- -->
+      <div class="row">
+        <div class="col">
+          <button type="button" id="btn-connect" class="btn btn-success">
+            Connect
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </body>
+<html>
