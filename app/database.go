@@ -88,11 +88,13 @@ func _find(client *Client, request *model.DatabaseRequest) {
 func _insert(client *Client, request *model.DatabaseRequest) {
 	log.Println("🚨 Inserting [", request.Collection, "]")
 	collection := database.Collection(request.Collection)
-	_, err := collection.InsertOne(context.Background(), request.Value)
+	result, err := collection.InsertOne(context.Background(), request.Value)
 
 	if err != nil {
 		log.Fatal(err)
 	}
+	documentID := result.InsertedID
+	fmt.Printf("⭐️ %v\n", documentID)
 }
 
 func _update(client *Client, request *model.DatabaseRequest) {

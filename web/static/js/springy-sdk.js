@@ -102,10 +102,11 @@ class DocumentCollection {
         this.name = name;
     }
 
-    // Watches a database reference
+    // Watches a collection for events
     watch = (eventType, callback) => {
 
         let message = {
+            identifier: uuidv4(),
             collection: this.name,
             action: SpringyActions.watch,
             operation: eventType
@@ -115,15 +116,12 @@ class DocumentCollection {
             this.subscribers.set(callback, eventType);
         }
 
-        const db = this.database;
-        if (db) {
-            let payload = JSON.stringify(message);
-            db.publish(payload);
-        }
+        let payload = JSON.stringify(message);
+        this.database.publish(payload);
     };
 
+    // Notifies all interested subscribers that we received a collection event
     notify = (message) => {
-
         let key = message['documentKey']['_id'];
         let eventType = message['operationType'];
         this.subscribers.forEach((type, subscriber) => {
@@ -134,16 +132,24 @@ class DocumentCollection {
     }
 
     // Add a new document to this collection with the specified data, assigning it a document ID automatically.
-    add = (value, onComplete) => {
-        let payload = JSON.stringify(value);
+    add = (value, callback) => {
         let message = {
+            identifier: uuidv4(),
             collection: this.name,
             action: SpringyActions.write,
-            operation: SpringyEvents.insert
+            value: value
         };
+        let payload = JSON.stringify(message);
+        this.database.publish(payload);
     };
 
-    find = (onComplete) => {
-        
+    find = (callback) => {
+
     }
+}
+
+function uuidv4() {
+    return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+        (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+    );
 }

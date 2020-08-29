@@ -52,7 +52,9 @@
             name: name
           };
 
-          collection.add(value);
+          collection.add(value, (key) => {
+            console.log(`⭐️ [${key}]`);
+          });
         });
 
       });
