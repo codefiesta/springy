@@ -15,21 +15,24 @@
         databaseURL: "ws://" + document.location.host + "/ws"
       };
 
+      let app; // Our app
+
       $().ready(function () {
-        let database = new Springy(config);
+
+        app = new Springy(config);
+
+        let users = app.database.reference('/users');
 
         // Start watching inserts
-        database.watch('/users', 'insert', (data) => {
-          console.log(`🎯 #{data}`);
+        users.watch(Springy.events.insert, (data) => {
+          console.log(`🎯`, data);
         });
 
         // Start watching deletions
-        database.watch('/users', 'delete', (data) => {
-          console.log(`💩 #{data}`);
+        users.watch(Springy.events.remove, (data) => {
+          console.log(`💩`, data);
         });
       });
-
-
 
       // var ws; // The websocket connection
       //
