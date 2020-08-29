@@ -28,6 +28,7 @@ func init() {
 func initRoutes() {
 	http.HandleFunc("/", indexRoute)
 	http.HandleFunc("/ws", hub.Upgrade)
+	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./web/static"))))
 }
 
 /// Returns the index.html
