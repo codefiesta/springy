@@ -86,14 +86,13 @@ func _find(client *Client, request *model.DatabaseRequest) {
 }
 
 func _insert(client *Client, request *model.DatabaseRequest) {
-	fmt.Printf("🚨 Inserting ...")
-	collection := database.Collection(config.Database.Collection)
-	result, err := collection.InsertOne(context.Background(), request.Value)
+	log.Println("🚨 Inserting [", request.Collection, "]")
+	collection := database.Collection(request.Collection)
+	_, err := collection.InsertOne(context.Background(), request.Value)
 
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("%v\n", result.InsertedID)
 }
 
 func _update(client *Client, request *model.DatabaseRequest) {
@@ -118,7 +117,7 @@ func _watch(client *Client, request *model.DatabaseRequest) {
 		},
 		},
 	}
-	collection := database.Collection(config.Database.Collection)
+	collection := database.Collection(request.Collection)
 	collectionStream, err := collection.Watch(context.TODO(), mongo.Pipeline{matchingPipeline})
 
 	if err != nil {
@@ -136,7 +135,7 @@ func _watchChangeStream(client *Client, context context.Context, stream *mongo.C
 		if err := stream.Decode(&data); err != nil {
 			panic(err)
 		}
-		fmt.Printf("%v\n", data)
+		fmt.Printf("🍄 %v\n", data)
 		client.OnData(data)
 	}
 }

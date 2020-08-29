@@ -1,6 +1,7 @@
 package app
 
 import (
+	"bytes"
 	"encoding/json"
 	"github.com/gorilla/websocket"
 	"go.springy.io/model"
@@ -114,5 +115,12 @@ func (c *Client) write() {
 
 func (c *Client) OnData(data map[string]interface{}) {
 	message, _ := json.Marshal(data)
-	c.hub.broadcast <- message
+	buffer := new(bytes.Buffer)
+	error := json.Compact(buffer, message)
+	if error != nil {
+		log.Print("💩 Error compacting JSON: ", error)
+		return
+	}
+	c.hub.broadcast <- buffer.Bytes()
+	//c.hub.broadcast <- message
 }

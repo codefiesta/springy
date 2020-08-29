@@ -21,165 +21,59 @@
 
         app = new Springy(config);
 
-        let users = app.database.reference('/users');
+        let collection = app.database.collection('users');
 
-        // Start watching inserts
-        users.watch(Springy.events.insert, (data) => {
-          console.log(`🎯`, data);
+        // Start watching document inserts
+        collection.watch(SpringyEvents.insert, (key, data) => {
+          console.log(`🍄 [${key}]`, data);
         });
 
-        // Start watching deletions
-        users.watch(Springy.events.remove, (data) => {
-          console.log(`💩`, data);
+        // Start watching document updates
+        collection.watch(SpringyEvents.update, (key, data) => {
+          console.log(`🐳 [${key}]`, data);
         });
+
+        // Start watching document replacements
+        collection.watch(SpringyEvents.replace, (key, data) => {
+          console.log(`🎯 [${key}]`, data);
+        });
+
+        // Start watching document deletions
+        collection.watch(SpringyEvents.delete, (key, data) => {
+          console.log(`💩 [${key}]`, data);
+        });
+
+        $("#user-form").submit(function( event ) {
+          event.preventDefault();
+          let name = $("#user-name").val();
+
+          let value = {
+            id: Math.random(),
+            name: name
+          };
+
+          collection.add(value);
+        });
+
       });
 
-      // var ws; // The websocket connection
-      //
-      // // Connect to the websocket and start handling socket messages
-      // function connect() {
-      //
-      //   // Connect to the websocket
-      //   if (window["WebSocket"]) {
-      //
-      //       let socketUrl = "ws://" + document.location.host + "/ws"
-      //       ws = new WebSocket(socketUrl);
-      //
-      //       ws.onopen = function (e) {
-      //         console.log('Connection opened');
-      //         $('#btn-connect').removeClass('btn-success').addClass('btn-danger').html('Disconnect');
-      //       };
-      //
-      //       ws.onclose = function (e) {
-      //         console.log('Connection closed');
-      //         $('#btn-connect').removeClass('btn-danger').addClass('btn-success').html('Connect');
-      //       };
-      //
-      //       ws.onmessage = function (e) {
-      //         try {
-      //           let message = JSON.parse(e.data);
-      //           handleSocketMessage(message);
-      //         } catch(err) {
-      //         }
-      //       };
-      //   } else {
-      //     console.log('Your browser does not support WebSockets.');
-      //   }
-      // }
-      //
-      // // Handle mouse & touch move events and send the messages to our websocket
-      // function handleMouseMove(event) {
-      //      var eventDoc, doc, body;
-      //      event = event || window.event;
-      //
-      //      // Don't send any messages if we aren't connected
-      //      if (!ws && Object.keys(user).length === 0) {
-      //        console.log('No connection or user!');
-      //        return false;
-      //     }
-      //
-      //     // Grab the user's page coordinates in x, y
-      //     let position = {x: event.pageX, y: event.pageY};
-      //     let message = {...me, ...position}; // Merge the me & position objects
-      //     let payload = JSON.stringify(message);
-      //     ws.send(payload);
-      //  }
-      //
-      //  // For handling touch devices
-      //  function handleTouchMove(event) {
-      //
-      //    let touch = event.touches[0] || event.targetTouches[0];
-      //    let x = touch.pageX;
-      //    let y = touch.pageY;
-      //    // Don't send any messages if we aren't connected
-      //    if (!ws && Object.keys(user).length === 0) {
-      //      console.log('No connection or user!');
-      //      return false;
-      //   }
-      //
-      //   let position = {x: x, y: y};
-      //   let message = {...me, ...position}; // Merge the me & position objects
-      //   let payload = JSON.stringify(message);
-      //   ws.send(payload);
-      //
-      //  }
-
-       // Start driving UI events from our socket messages
-       // function handleSocketMessage(message) {
-       //   console.log(message);
-       // }
-
-       // Wait for the dom to ready
-       // $().ready(function () {
-         // // Automatically connect to the socket
-         // connect();
-         //
-         // // Join / Leave button
-         // $('#btn-connect').click(function(e) {
-         //   if (ws && ws.readyState === WebSocket.OPEN) {
-         //     ws.close();
-         //     return false;
-         //   }
-         //   // Connect to the websocket
-         //   connect();
-         // });
-         //
-         // $("#change-stream-form").submit(function( event ) {
-         //   event.preventDefault();
-         //   let path = $("#path").val();
-         //   let changeEvent = $("#change-event").val();
-         //
-         //   let message = {
-         //     path: path,
-         //     action: "write",
-         //     operation: changeEvent,
-         //     value: {
-         //       name: "Kevin"
-         //     }
-         //   };
-         //
-         //   let payload = JSON.stringify(message);
-         //   console.log(payload);
-         //   ws.send(payload);
-         // });
-      // });
     </script>
   </head>
 
   <body>
 
     <div class="container-fluid mt-5">
-        <!-- The Change Stream Form -->
         <div class="row">
           <div class="col">
-            <form id="change-stream-form">
+            <form id="user-form">
               <div class="form-group">
-
-                <label for="change-event">Change Stream Event</label>
-                <select id="change-event" class="custom-select">
-                  <option value="insert">Insert</option>
-                  <option value="update">Update</option>
-                  <option value="delete">Delete</option>
-                  <option value="replace">Replace</option>
-                </select>
-
-                <label for="path">Change Stream Path</label>
-                <input type="text" class="form-control" id="path" placeholder="path/to/collection" />
-
+                <label for="name">Name</label>
+                <input type="text" class="form-control" id="user-name" placeholder="User Name" />
               </div>
               <button type="submit" class="btn btn-primary">Submit</button>
             </form>
           </div>
         </div>
-
-      <!-- -->
-      <div class="row">
-        <div class="col">
-          <button type="button" id="btn-connect" class="btn btn-success">
-            Connect
-          </button>
-        </div>
-      </div>
     </div>
 
   </body>

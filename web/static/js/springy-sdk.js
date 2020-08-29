@@ -1,3 +1,15 @@
+const SpringyEvents = Object.freeze({
+    insert: "insert",
+    update: "update",
+    delete: "delete",
+    replace: "replace",
+});
+
+const SpringyActions = Object.freeze({
+    read: "read",
+    write: "write",
+    watch: "watch",
+});
 
 class Springy {
 
@@ -7,16 +19,6 @@ class Springy {
             return;
         }
         this._database = new Database(config);
-    }
-
-    // Returns our enum of events
-    static get events() {
-        return Object.freeze({
-            insert: "insert",
-            update: "update",
-            remove: "delete",
-            replace: "replace",
-        });
     }
 
     // Returns the app database object
@@ -29,7 +31,7 @@ class Database {
 
     constructor(config) {
         this.isConnected = false;
-        this.references = new Map();
+        this.collections = new Map();
         this.ws = new WebSocket(config.databaseURL);
         this.#addSocketHandlers();
     }
@@ -50,7 +52,7 @@ class Database {
             try {
                 let message = JSON.parse(e.data);
                 self.#broadcast(message);
-            } catch(err) {
+            } catch (err) {
                 console.error(err);
             }
         };
@@ -63,9 +65,9 @@ class Database {
         });
     };
 
-    /// Broadcasts an incoming message to reference handlers
+    /// Broadcasts an incoming message to collection handlers
     #broadcast = (message) => {
-        this.references.forEach((value, key) => {
+        this.collections.forEach((value, key) => {
             value.notify(message);
         });
     };
@@ -81,40 +83,37 @@ class Database {
         }
     };
 
-    // Returns a data reference for the specified path
-    reference = (path) => {
-        if (this.references.has(path)) {
-            return this.references.get(path);
+    // Returns a database collection for the specified name
+    collection = (name) => {
+        if (this.collections.has(name)) {
+            return this.collections.get(name);
         }
-        let reference = new DataReference(this, path);
-        this.references.set(path, reference);
-        return reference;
+        let collection = new DocumentCollection(this, name);
+        this.collections.set(name, collection);
+        return collection;
     };
 }
 
-class DataReference {
+class DocumentCollection {
 
-    constructor(database, path) {
+    constructor(database, name) {
         this.database = database;
-        this.subscribers = [];
-        this.path = path;
-    }
-
-    child = (path) => {
-        return new DataReference(this.database, path);
+        this.subscribers = new Map();
+        this.name = name;
     }
 
     // Watches a database reference
     watch = (eventType, callback) => {
 
         let message = {
-            path: this.path,
-            action: "watch",
+            collection: this.name,
+            action: SpringyActions.watch,
             operation: eventType
         };
 
-        console.log(`👀 ${eventType}`);
-        if (callback) { this.subscribers.push(callback); }
+        if (callback) {
+            this.subscribers.set(callback, eventType);
+        }
 
         const db = this.database;
         if (db) {
@@ -124,15 +123,27 @@ class DataReference {
     };
 
     notify = (message) => {
-        for (const subscriber of this.subscribers) {
-            subscriber(message);
-        }
+
+        let key = message['documentKey']['_id'];
+        let eventType = message['operationType'];
+        this.subscribers.forEach((type, subscriber) => {
+            if (type === eventType) {
+                subscriber(key, message);
+            }
+        });
     }
 
-    // Writes data to this Database location.
-    // This will overwrite any data at this location and all child locations.
-    // Passing null for the new value is equivalent to calling remove()
-    set = (value, onComplete) => {
-
+    // Add a new document to this collection with the specified data, assigning it a document ID automatically.
+    add = (value, onComplete) => {
+        let payload = JSON.stringify(value);
+        let message = {
+            collection: this.name,
+            action: SpringyActions.write,
+            operation: SpringyEvents.insert
+        };
     };
+
+    find = (onComplete) => {
+        
+    }
 }
