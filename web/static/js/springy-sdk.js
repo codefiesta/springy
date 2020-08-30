@@ -115,7 +115,6 @@ class DocumentCollection {
 
     // Notifies all interested subscribers that we received a collection event
     notify = (data) => {
-        console.log(data);
         let snapshot = new DataSnapshot(data);
         if (this.subscribers.has(snapshot.identifier)) {
             let subscriber = this.subscribers.get(snapshot.identifier);
