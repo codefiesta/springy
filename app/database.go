@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -110,8 +111,8 @@ func _insert(client *Client, request *model.DatabaseRequest) {
 	}
 
 	var snapshot = bson.M{
-		"_sid":  request.Identifier,
-		"key":   result.InsertedID,
+		"_sid": request.Identifier,
+		"key":  result.InsertedID,
 	}
 	go client.OnData(snapshot)
 }
@@ -130,7 +131,21 @@ func _update(client *Client, request *model.DatabaseRequest) {
 }
 
 func _delete(client *Client, request *model.DatabaseRequest) {
+	collection := database.Collection(request.Collection)
+	docID, _ := primitive.ObjectIDFromHex(request.Key)
+	var match = bson.M{"_id": docID}
 
+	_, err := collection.DeleteOne(context.Background(), match)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var snapshot = bson.M{
+		"_sid": request.Identifier,
+		"key":  request.Key,
+	}
+	go client.OnData(snapshot)
 }
 
 func _replace(client *Client, request *model.DatabaseRequest) {

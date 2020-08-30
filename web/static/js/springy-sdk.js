@@ -53,7 +53,7 @@ class Database {
                 let data = JSON.parse(e.data);
                 self.#broadcast(data);
             } catch (err) {
-                console.error(err);
+                console.error(err, e.data);
             }
         };
     };
@@ -157,7 +157,13 @@ class DocumentCollection {
     add = (value, callback) => {
         let subscriber = new DataSubscriber(this.name, null, SpringyActions.write, SpringyEvents.insert, value, callback);
         this.subscribe(subscriber);
-    };
+    }
+
+    // Removes a document with the specified key
+    remove = (key, callback) => {
+        let subscriber = new DataSubscriber(this.name, key, SpringyActions.write, SpringyEvents.delete, null, callback);
+        this.subscribe(subscriber);
+    }
 }
 
 

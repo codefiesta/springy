@@ -63,8 +63,12 @@
           if (me == null) {
             $('#modal-join').modal();
           } else {
-            me = null;
-            $('#btn-action').removeClass('btn-danger').addClass('btn-primary').html('Join');
+
+            // Remove local user
+            collection.remove(me, (snapshot) => {
+              me = null;
+              $('#btn-action').removeClass('btn-danger').addClass('btn-primary').html('Join');
+            });
           }
         });
 
