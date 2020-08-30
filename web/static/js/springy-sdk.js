@@ -102,16 +102,26 @@ class DocumentCollection {
         this.name = name;
     }
 
-    // Watches a collection for events
-    watch = (eventType, callback) => {
-
-        let subscriber = new DataSubscriber(this.name, SpringyActions.watch, eventType, callback);
+    // Queues the subscriber event
+    subscribe = (subscriber) => {
         this.subscribers.set(subscriber.identifier, subscriber);
-
         let encoded = subscriber.encode();
         this.database.publish(encoded);
+    }
+
+    // Watches a collection for events
+    watch = (eventType, callback) => {
+        let subscriber = new DataSubscriber(this.name, null, SpringyActions.watch, eventType, null, callback);
+        this.subscribe(subscriber);
         return subscriber;
     };
+
+    // Fetches all documents in the collection
+    get = (callback) => {
+        let subscriber = new DataSubscriber(this.name, null, SpringyActions.read, null, null, callback);
+        this.subscribe(subscriber);
+    };
+
 
     // Notifies all interested subscribers that we received a collection event
     notify = (data) => {
@@ -136,38 +146,77 @@ class DocumentCollection {
         }
     }
 
+    // Returns a document in this collection with the specified identifier.
+    // If no identifier is specified, an automatically-generated unique ID will be used for the returned doc.
+    doc = (key) => {
+        let document = new Document(this, key);
+        return document;
+    }
+
     // Add a new document to this collection with the specified data, assigning it a document ID automatically.
     add = (value, callback) => {
-
-        let subscriber = new DataSubscriber(this.name, SpringyActions.write, SpringyEvents.insert, callback);
-        this.subscribers.set(subscriber.identifier, subscriber);
-
-        let encoded = subscriber.encode(value);
-        this.database.publish(encoded);
+        let subscriber = new DataSubscriber(this.name, null, SpringyActions.write, SpringyEvents.insert, value, callback);
+        this.subscribe(subscriber);
     };
+}
 
-    find = (callback) => {
+
+class Document {
+
+    constructor(collection, key) {
+        this.collection = collection;
+        this.key = key;
+        this._onDisconnect = new OnDisconnect(this);
+    }
+
+    // Writes data to this document location.
+    set = (value, callback) => {
+        let operation = this.key === undefined ? SpringyEvents.insert : SpringyEvents.update
+        let subscriber = new DataSubscriber(this.collection.name, this.key, SpringyActions.write, operation, value, callback);
+        this.collection.subscribe(subscriber);
+    }
+
+    onDisconnect = () => {
+        return this._onDisconnect;
+    }
+}
+
+class OnDisconnect {
+
+    constructor(doc) {
+        this.doc = doc;
+    }
+
+    remove = () => {
 
     }
+
+    set = (value, callback) => {
+
+    }
+
 }
 
 class DataSubscriber {
 
-    constructor(collection, action, event, callback) {
+    constructor(collection, key, action, event, value, callback) {
         this.sid = uuidv4();
         this.collection = collection;
+        this.key = key;
         this.action = action;
         this.event = event;
+        this.value = value;
         this.callback = callback;
     }
 
-    encode = (value) => {
+    encode = () => {
         let encoded = {
             _sid: this.sid,
             collection: this.collection,
+            key: this.key,
             action: this.action,
             operation: this.event,
-            value: value
+            value: this.value ?? {}
         };
         return JSON.stringify(encoded);
     }
@@ -177,6 +226,7 @@ class DataSubscriber {
     }
 }
 
+// Contains data read from a document in the database
 class DataSnapshot {
 
     constructor(data) {

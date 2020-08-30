@@ -53,10 +53,11 @@ func Perform(client *Client, request *model.DatabaseRequest) {
 
 	switch request.Action {
 	case model.Read:
-		// Performs a single find request for the client
+		// Performs a single find request
 		_find(client, request)
 		break
 	case model.Write:
+		// Performs a single CRUD operation
 		switch request.Operation {
 		case model.Insert:
 			_insert(client, request)
@@ -77,11 +78,27 @@ func Perform(client *Client, request *model.DatabaseRequest) {
 		_watch(client, request)
 		break
 	}
-
 }
 
 func _find(client *Client, request *model.DatabaseRequest) {
 
+	context := context.Background()
+	collection := database.Collection(request.Collection)
+	cursor, err := collection.Find(context, bson.M{})
+	if err != nil {
+		log.Fatal(err)
+	}
+	var results []bson.M
+	if err = cursor.All(context, &results); err != nil {
+		log.Fatal(err)
+	}
+
+	var snapshot = bson.M{
+		"_sid":  request.Identifier,
+		"key":   request.Collection,
+		"value": results,
+	}
+	go client.OnData(snapshot)
 }
 
 func _insert(client *Client, request *model.DatabaseRequest) {

@@ -2,10 +2,17 @@ package model
 
 // Encapsulates our basic database request
 type DatabaseRequest struct {
-	Identifier string                 `json:"_sid"`
-	Path       string                 `json:"path"`
-	Collection string                 `json:"collection"`
-	Action     DatabaseAction         `json:"action"`
-	Operation  DatabaseOperation      `json:"operation"`
-	Value      map[string]interface{} `json:"value"`
+
+	// The request identifier
+	Identifier string `json:"_sid"`
+	// The database collection name
+	Collection string `json:"collection"`
+	// The key of a document inside the collection (optional)
+	Key string `json:"key"`
+	// The action type
+	Action DatabaseAction `json:"action"`
+	/// The data operation
+	Operation DatabaseOperation `json:"operation"`
+	// The document value (optional)
+	Value map[string]interface{} `json:"value"`
 }
