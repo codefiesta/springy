@@ -50,8 +50,8 @@ class Database {
 
         this.ws.onmessage = function (e) {
             try {
-                let message = JSON.parse(e.data);
-                self.#broadcast(message);
+                let data = JSON.parse(e.data);
+                self.#broadcast(data);
             } catch (err) {
                 console.error(err);
             }
@@ -108,37 +108,33 @@ class DocumentCollection {
         let subscriber = new DataSubscriber(this.name, SpringyActions.watch, eventType, callback);
         this.subscribers.set(subscriber.identifier, subscriber);
 
-        // console.log(`Settings subscriber: [${subscriber.identifier}] = [${this.subscribers.size}]`)
         let encoded = subscriber.encode();
         this.database.publish(encoded);
         return subscriber;
     };
 
     // Notifies all interested subscribers that we received a collection event
-    notify = (message) => {
-        let identifier = message['_sid'];
-        let key = message['_id'];
-        let eventType = message['operationType'];
-
-        if (this.subscribers.has(identifier)) {
-            let subscriber = this.subscribers.get(identifier);
-            console.log(`🌍 ${identifier}`, subscriber);
+    notify = (data) => {
+        console.log(data);
+        let snapshot = new DataSnapshot(data);
+        if (this.subscribers.has(snapshot.identifier)) {
+            let subscriber = this.subscribers.get(snapshot.identifier);
             if (subscriber.callback) {
-                subscriber.callback(key, message);
+                subscriber.callback(snapshot);
+            }
+
+            // REMOVE ANY SINGLE FIRE READ OR WRITE SUBSCRIBERS
+            switch (subscriber.action) {
+                case SpringyActions.write:
+                    this.subscribers.delete(snapshot.identifier);
+                    break;
+                case SpringyActions.read:
+                    this.subscribers.delete(snapshot.identifier);
+                    break;
+                default:
+                    break;
             }
         }
-
-        // this.subscribers.forEach((value, key) => {
-        //
-        //     console.log(`${key}:`, value);
-        //     // if (subscriber.callback) {
-        //     //     subscriber.callback(key, message);
-        //     // }
-        //     //
-        //     // // if (type === eventType) {
-        //     // //     subscriber(key, message);
-        //     // // }
-        // });
     }
 
     // Add a new document to this collection with the specified data, assigning it a document ID automatically.
@@ -175,6 +171,19 @@ class DataSubscriber {
             value: value
         };
         return JSON.stringify(encoded);
+    }
+
+    get identifier() {
+        return this.sid;
+    }
+}
+
+class DataSnapshot {
+
+    constructor(data) {
+        this.sid = data["_sid"];
+        this.key = data["key"];
+        this.value = data["value"] ?? {};
     }
 
     get identifier() {

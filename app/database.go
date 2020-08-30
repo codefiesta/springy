@@ -50,7 +50,6 @@ func Start() {
 }
 
 func Perform(client *Client, request *model.DatabaseRequest) {
-	fmt.Printf("✅ Performing: %#v\n", request)
 
 	switch request.Action {
 	case model.Read:
@@ -86,21 +85,18 @@ func _find(client *Client, request *model.DatabaseRequest) {
 }
 
 func _insert(client *Client, request *model.DatabaseRequest) {
-	log.Println("🚨 Inserting [", request.Collection, "]")
 	collection := database.Collection(request.Collection)
 	result, err := collection.InsertOne(context.Background(), request.Value)
 
 	if err != nil {
 		log.Fatal(err)
 	}
-	documentID := result.InsertedID
-	var data = bson.M{
-		"_sid": request.Identifier,
-		"_id": documentID,
+
+	var snapshot = bson.M{
+		"_sid":  request.Identifier,
+		"key":   result.InsertedID,
 	}
-	// Send the ID back
-	fmt.Printf("⭐️ %v\n", documentID)
-	go client.OnData(data)
+	go client.OnData(snapshot)
 }
 
 func _update(client *Client, request *model.DatabaseRequest) {
@@ -152,8 +148,14 @@ func _watchChangeStream(identifier string, client *Client, context context.Conte
 		if err := stream.Decode(&data); err != nil {
 			panic(err)
 		}
-		data["_sid"] = identifier
-		//fmt.Printf("🍄 %v\n", data)
-		client.OnData(data)
+
+		docKey, _ := data["documentKey"].(bson.M)
+		doc, _ := data["fullDocument"].(bson.M)
+		var snapshot = bson.M{
+			"_sid":  identifier,
+			"key":   docKey["_id"],
+			"value": doc,
+		}
+		client.OnData(snapshot)
 	}
 }
