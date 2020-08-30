@@ -67,8 +67,8 @@ class Database {
 
     /// Broadcasts an incoming message to collection handlers
     #broadcast = (message) => {
-        this.collections.forEach((value, key) => {
-            value.notify(message);
+        this.collections.forEach((collection, key) => {
+            collection.notify(message);
         });
     };
 
@@ -105,46 +105,80 @@ class DocumentCollection {
     // Watches a collection for events
     watch = (eventType, callback) => {
 
-        let message = {
-            identifier: uuidv4(),
-            collection: this.name,
-            action: SpringyActions.watch,
-            operation: eventType
-        };
+        let subscriber = new DataSubscriber(this.name, SpringyActions.watch, eventType, callback);
+        this.subscribers.set(subscriber.identifier, subscriber);
 
-        if (callback) {
-            this.subscribers.set(callback, eventType);
-        }
-
-        let payload = JSON.stringify(message);
-        this.database.publish(payload);
+        // console.log(`Settings subscriber: [${subscriber.identifier}] = [${this.subscribers.size}]`)
+        let encoded = subscriber.encode();
+        this.database.publish(encoded);
+        return subscriber;
     };
 
     // Notifies all interested subscribers that we received a collection event
     notify = (message) => {
-        let key = message['documentKey']['_id'];
+        let identifier = message['_sid'];
+        let key = message['_id'];
         let eventType = message['operationType'];
-        this.subscribers.forEach((type, subscriber) => {
-            if (type === eventType) {
-                subscriber(key, message);
+
+        if (this.subscribers.has(identifier)) {
+            let subscriber = this.subscribers.get(identifier);
+            console.log(`🌍 ${identifier}`, subscriber);
+            if (subscriber.callback) {
+                subscriber.callback(key, message);
             }
-        });
+        }
+
+        // this.subscribers.forEach((value, key) => {
+        //
+        //     console.log(`${key}:`, value);
+        //     // if (subscriber.callback) {
+        //     //     subscriber.callback(key, message);
+        //     // }
+        //     //
+        //     // // if (type === eventType) {
+        //     // //     subscriber(key, message);
+        //     // // }
+        // });
     }
 
     // Add a new document to this collection with the specified data, assigning it a document ID automatically.
     add = (value, callback) => {
-        let message = {
-            identifier: uuidv4(),
-            collection: this.name,
-            action: SpringyActions.write,
-            value: value
-        };
-        let payload = JSON.stringify(message);
-        this.database.publish(payload);
+
+        let subscriber = new DataSubscriber(this.name, SpringyActions.write, SpringyEvents.insert, callback);
+        this.subscribers.set(subscriber.identifier, subscriber);
+
+        let encoded = subscriber.encode(value);
+        this.database.publish(encoded);
     };
 
     find = (callback) => {
 
+    }
+}
+
+class DataSubscriber {
+
+    constructor(collection, action, event, callback) {
+        this.sid = uuidv4();
+        this.collection = collection;
+        this.action = action;
+        this.event = event;
+        this.callback = callback;
+    }
+
+    encode = (value) => {
+        let encoded = {
+            _sid: this.sid,
+            collection: this.collection,
+            action: this.action,
+            operation: this.event,
+            value: value
+        };
+        return JSON.stringify(encoded);
+    }
+
+    get identifier() {
+        return this.sid;
     }
 }
 

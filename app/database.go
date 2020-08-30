@@ -94,11 +94,26 @@ func _insert(client *Client, request *model.DatabaseRequest) {
 		log.Fatal(err)
 	}
 	documentID := result.InsertedID
+	var data = bson.M{
+		"_sid": request.Identifier,
+		"_id": documentID,
+	}
+	// Send the ID back
 	fmt.Printf("⭐️ %v\n", documentID)
+	go client.OnData(data)
 }
 
 func _update(client *Client, request *model.DatabaseRequest) {
-
+	//collection := database.Collection(request.Collection)
+	//id, _ := primitive.ObjectIDFromHex("5d9e0173c1305d2a54eb431a")
+	//result, err := collection.UpdateOne(
+	//	context.Background(),
+	//	bson.M{"_id": id},
+	//	bson.D{ bson.E{request.Value}},
+	//)
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
 }
 
 func _delete(client *Client, request *model.DatabaseRequest) {
@@ -127,17 +142,18 @@ func _watch(client *Client, request *model.DatabaseRequest) {
 	}
 
 	streamContext, _ := context.WithCancel(context.Background())
-	go _watchChangeStream(client, streamContext, collectionStream)
+	go _watchChangeStream(request.Identifier, client, streamContext, collectionStream)
 }
 
-func _watchChangeStream(client *Client, context context.Context, stream *mongo.ChangeStream) {
+func _watchChangeStream(identifier string, client *Client, context context.Context, stream *mongo.ChangeStream) {
 	defer stream.Close(context)
 	for stream.Next(context) {
 		var data bson.M
 		if err := stream.Decode(&data); err != nil {
 			panic(err)
 		}
-		fmt.Printf("🍄 %v\n", data)
+		data["_sid"] = identifier
+		//fmt.Printf("🍄 %v\n", data)
 		client.OnData(data)
 	}
 }

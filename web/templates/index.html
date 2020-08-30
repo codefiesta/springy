@@ -24,24 +24,29 @@
         let collection = app.database.collection('users');
 
         // Start watching document inserts
-        collection.watch(SpringyEvents.insert, (key, data) => {
+        let insert = collection.watch(SpringyEvents.insert, (key, data) => {
           console.log(`🍄 [${key}]`, data);
         });
 
         // Start watching document updates
-        collection.watch(SpringyEvents.update, (key, data) => {
+        let update = collection.watch(SpringyEvents.update, (key, data) => {
           console.log(`🐳 [${key}]`, data);
         });
 
         // Start watching document replacements
-        collection.watch(SpringyEvents.replace, (key, data) => {
+        let replace = collection.watch(SpringyEvents.replace, (key, data) => {
           console.log(`🎯 [${key}]`, data);
         });
 
         // Start watching document deletions
-        collection.watch(SpringyEvents.delete, (key, data) => {
+        let deletion = collection.watch(SpringyEvents.delete, (key, data) => {
           console.log(`💩 [${key}]`, data);
         });
+
+        console.log(`INSERT: ${insert.identifier}`);
+        console.log(`UPDATE: ${update.identifier}`);
+        console.log(`REPLACE: ${replace.identifier}`);
+        console.log(`DELETE: ${deletion.identifier}`);
 
         $("#user-form").submit(function( event ) {
           event.preventDefault();
@@ -52,7 +57,7 @@
             name: name
           };
 
-          collection.add(value, (key) => {
+          collection.add(value, (key, data) => {
             console.log(`⭐️ [${key}]`);
           });
         });
