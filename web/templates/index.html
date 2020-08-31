@@ -44,6 +44,7 @@
 
         // Start watching document deletions
         let deletion = collection.watch(SpringyEvents.delete, (snapshot) => {
+          console.log('🍔🍔🍔🍔', snapshot);
           $(`.user-list #${snapshot.key}`).remove();
         });
 
@@ -65,7 +66,8 @@
           } else {
 
             // Remove local user
-            collection.remove(me, (snapshot) => {
+            collection.remove(me.key, (snapshot) => {
+              console.log(`💩`, snapshot);
               me = null;
               $('#btn-action').removeClass('btn-danger').addClass('btn-primary').html('Join');
             });
@@ -83,12 +85,10 @@
             name: name
           };
 
-          let ephemeral = collection.doc();
-          ephemeral.onDisconnect().remove();
-
           collection.add(value, (snapshot) => {
             console.log(`⭐️ [${snapshot.key}]`, snapshot);
-            me = snapshot.key;
+            me = snapshot;
+            me.onDisconnect().remove()
             $("#input-user-name").val('');
             $('#btn-action').removeClass('btn-primary').addClass('btn-danger').html('Leave');
           });

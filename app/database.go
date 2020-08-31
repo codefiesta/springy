@@ -47,11 +47,12 @@ func init() {
 
 func processRequest(client *Client, request *Request) {
 
-	switch request.Action {
-	case Read:
-		// Performs a single find request
+	switch request.Scope {
+	case Find:
 		_find(client, request)
 		break
+	case FindOne:
+		_findOne(client, request)
 	case Write:
 		// Performs a single CRUD operation
 		switch request.Operation {
@@ -76,6 +77,28 @@ func processRequest(client *Client, request *Request) {
 	}
 }
 
+func _findOne(client *Client, request *Request) {
+	context := context.Background()
+	collection := database.Collection(request.Collection)
+	result := collection.FindOne(context, request.filter())
+
+	doc := bson.M{}
+	if result.Err() == mongo.ErrNoDocuments {
+		doc = bson.M{
+			"_uid":  request.Uid,
+			"value": bson.M{
+				"_id": primitive.NewObjectID(),
+			},
+		}
+	} else {
+		if err := result.Decode(&doc); err != nil {
+			panic(err)
+		}
+	}
+
+	go client.writeResponse(doc)
+}
+
 func _find(client *Client, request *Request) {
 
 	context := context.Background()
@@ -89,12 +112,15 @@ func _find(client *Client, request *Request) {
 		log.Fatal(err)
 	}
 
-	var snapshot = bson.M{
+	if request.OnDisconnect {
+		return
+	}
+
+	var doc = bson.M{
 		"_uid":  request.Uid,
-		"key":   request.Collection,
 		"value": results,
 	}
-	go client.writeResponse(snapshot)
+	go client.writeResponse(doc)
 }
 
 func _insert(client *Client, request *Request) {
@@ -105,42 +131,39 @@ func _insert(client *Client, request *Request) {
 		log.Fatal(err)
 	}
 
-	var snapshot = bson.M{
-		"_uid": request.Uid,
-		"key":  result.InsertedID,
+	if request.OnDisconnect {
+		return
 	}
-	go client.writeResponse(snapshot)
+
+	request.Value["_id"] = result.InsertedID
+	var doc = bson.M{
+		"_uid": request.Uid,
+		"value":  request.Value,
+	}
+	go client.writeResponse(doc)
 }
 
 func _update(client *Client, request *Request) {
-	//collection := database.Collection(request.Collection)
-	//id, _ := primitive.ObjectIDFromHex("5d9e0173c1305d2a54eb431a")
-	//result, err := collection.UpdateOne(
-	//	context.Background(),
-	//	bson.M{"_id": id},
-	//	bson.D{ bson.E{request.Value}},
-	//)
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
 }
 
 func _delete(client *Client, request *Request) {
 	collection := database.Collection(request.Collection)
-	docID, _ := primitive.ObjectIDFromHex(request.Key)
-	var match = bson.M{"_id": docID}
-
-	_, err := collection.DeleteOne(context.Background(), match)
+	_, err := collection.DeleteOne(context.Background(), request.filter())
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	var snapshot = bson.M{
-		"_uid": request.Uid,
-		"key":  request.Key,
+	if request.OnDisconnect {
+		return
 	}
-	go client.writeResponse(snapshot)
+
+	var doc = bson.M{
+		"_uid":  request.Uid,
+		"value": request.Query,
+	}
+
+	go client.writeResponse(doc)
 }
 
 func _replace(client *Client, request *Request) {
@@ -176,11 +199,17 @@ func _watchChangeStream(identifier string, client *Client, context context.Conte
 			panic(err)
 		}
 
-		docKey, _ := data["documentKey"].(bson.M)
+		key, _ := data["documentKey"].(bson.M)
 		doc, _ := data["fullDocument"].(bson.M)
+
+		// Deletion change
+		if doc == nil {
+			doc = bson.M{
+				"_id": key["_id"],
+			}
+		}
 		var snapshot = bson.M{
 			"_uid":  identifier,
-			"key":   docKey["_id"],
 			"value": doc,
 		}
 		client.writeResponse(snapshot)

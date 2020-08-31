@@ -11,10 +11,13 @@ import (
 const (
 	// Time allowed to write a message to the peer.
 	writeWait = 10 * time.Second
+
 	// Time allowed to read the next pong message from the peer.
 	pongWait = 60 * time.Second
+
 	// Send pings to peer with this period. Must be less than pongWait.
 	pingPeriod = (pongWait * 9) / 10
+
 	// Maximum message size allowed from peer.
 	maxMessageSize = 512
 )
@@ -26,12 +29,16 @@ var (
 
 // Client is a middleman between the websocket connection and the hub.
 type Client struct {
+
 	// The hub
 	hub *Hub
+
 	// The websocket connection.
 	conn *websocket.Conn
+
 	// Buffered channel of outbound messages.
 	send chan []byte
+
 	// Deferred requests to process onDisconnect
 	requests map[string]Request
 }
@@ -46,10 +53,11 @@ func (c *Client) read() {
 		c.hub.unregister <- c
 		c.conn.Close()
 
-		//for k, v := range c.deferred {
-		//	log.Printf("🐳 %s = %v\n", k, v)
-		//	delete(c.deferred, k)
-		//}
+		for k, v := range c.requests {
+			log.Printf("🐳 %s = %v\n", k, v)
+			processRequest(c, &v)
+			delete(c.requests, k)
+		}
 	}()
 
 	c.conn.SetReadLimit(maxMessageSize)

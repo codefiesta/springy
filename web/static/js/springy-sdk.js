@@ -1,14 +1,15 @@
+const SpringyScope = Object.freeze({
+    find: "find",
+    findOne: "findOne",
+    write: "write",
+    watch: "watch",
+});
+
 const SpringyEvents = Object.freeze({
     insert: "insert",
     update: "update",
     delete: "delete",
     replace: "replace",
-});
-
-const SpringyActions = Object.freeze({
-    read: "read",
-    write: "write",
-    watch: "watch",
 });
 
 class Springy {
@@ -109,21 +110,21 @@ class DocumentCollection {
 
     // Watches a collection for events
     watch = (eventType, callback) => {
-        let subscriber = new DataSubscriber(this.name, null, SpringyActions.watch, eventType, null, callback);
+        let subscriber = new DataSubscriber(this.name, {}, SpringyScope.watch, eventType, null, callback);
         this.subscribe(subscriber);
         return subscriber;
     };
 
     // Fetches all documents in the collection
     get = (callback) => {
-        let subscriber = new DataSubscriber(this.name, null, SpringyActions.read, null, null, callback);
+        let subscriber = new DataSubscriber(this.name, {}, SpringyScope.find, null, null, callback);
         this.subscribe(subscriber);
     };
 
 
     // Notifies all interested subscribers that we received a collection event
     notify = (data) => {
-        let snapshot = new DataSnapshot(data);
+        let snapshot = new DataSnapshot(this, data);
         if (this.subscribers.has(snapshot.identifier)) {
             let subscriber = this.subscribers.get(snapshot.identifier);
             if (subscriber.callback) {
@@ -131,11 +132,8 @@ class DocumentCollection {
             }
 
             // REMOVE ANY SINGLE FIRE READ OR WRITE SUBSCRIBERS
-            switch (subscriber.action) {
-                case SpringyActions.write:
-                    this.subscribers.delete(snapshot.identifier);
-                    break;
-                case SpringyActions.read:
+            switch (subscriber.scope) {
+                case SpringyScope.write, SpringyScope.find, SpringyScope.findOne:
                     this.subscribers.delete(snapshot.identifier);
                     break;
                 default:
@@ -144,74 +142,27 @@ class DocumentCollection {
         }
     }
 
-    // Returns a document in this collection with the specified identifier.
-    // If no identifier is specified, an automatically-generated unique ID will be used for the returned doc.
-    doc = (key) => {
-        let document = new Document(this, key);
-        return document;
-    }
-
     // Add a new document to this collection with the specified data, assigning it a document ID automatically.
     add = (value, callback) => {
-        let subscriber = new DataSubscriber(this.name, null, SpringyActions.write, SpringyEvents.insert, value, callback);
+        let subscriber = new DataSubscriber(this.name, {}, SpringyScope.write, SpringyEvents.insert, value, callback);
         this.subscribe(subscriber);
     }
 
     // Removes a document with the specified key
     remove = (key, callback) => {
-        let subscriber = new DataSubscriber(this.name, key, SpringyActions.write, SpringyEvents.delete, null, callback);
+        let query = {"_id": key};
+        let subscriber = new DataSubscriber(this.name, query, SpringyScope.write, SpringyEvents.delete, null, callback);
         this.subscribe(subscriber);
     }
 }
 
-
-class Document {
-
-    constructor(collection, key) {
-        this.collection = collection;
-        this.key = key;
-        this.value = {};
-        this._onDisconnect = new OnDisconnect(this);
-        // Send a message to the server to either create an empty doc or back fill this information
-    }
-
-    // Writes data to this document location.
-    set = (value, callback) => {
-        let operation = this.key === undefined ? SpringyEvents.insert : SpringyEvents.update
-        let subscriber = new DataSubscriber(this.collection.name, this.key, SpringyActions.write, operation, value, callback);
-        this.collection.subscribe(subscriber);
-    }
-
-    onDisconnect = () => {
-        return this._onDisconnect;
-    }
-}
-
-class OnDisconnect {
-
-    constructor(doc) {
-        this.doc = doc;
-    }
-
-    remove = () => {
-        // Generate a message to send to the database
-        let subscriber = new DataSubscriber(this.doc.collection.name, this.doc.key, SpringyActions.write, SpringyEvents.delete, null, {}, true);
-        this.doc.collection.subscribe(subscriber);
-    }
-
-    set = (value, callback) => {
-
-    }
-
-}
-
 class DataSubscriber {
 
-    constructor(collection, key, action, event, value, callback, onDisconnect) {
+    constructor(collection, query, scope, event, value, callback, onDisconnect) {
         this.uid = uuidv4();
         this.collection = collection;
-        this.key = key;
-        this.action = action;
+        this.query = query;
+        this.scope = scope;
         this.event = event;
         this.value = value;
         this.onDisconnect = onDisconnect ?? false;
@@ -222,8 +173,8 @@ class DataSubscriber {
         let encoded = {
             _uid: this.uid,
             collection: this.collection,
-            key: this.key,
-            action: this.action,
+            query: this.query,
+            scope: this.scope,
             operation: this.event,
             value: this.value ?? {},
             onDisconnect: this.onDisconnect
@@ -239,19 +190,49 @@ class DataSubscriber {
 // Contains data read from a document in the database
 class DataSnapshot {
 
-    constructor(data) {
+    constructor(collection, data) {
+        this.collection = collection;
         this.uid = data["_uid"];
-        this.key = data["key"];
         this.value = data["value"] ?? {};
+        this._onDisconnect = new OnDisconnect(this);
+    }
+
+    get key() {
+        return this.value._id;
     }
 
     get identifier() {
         return this.uid;
     }
+
+    onDisconnect = () => {
+        return this._onDisconnect;
+    }
+}
+
+
+class OnDisconnect {
+
+    constructor(snapshot) {
+        this.snapshot = snapshot;
+    }
+
+    remove = () => {
+        // Generate a message to send to the database
+        let query = {"_id": this.snapshot.key};
+        let subscriber = new DataSubscriber(this.snapshot.collection.name, query, SpringyScope.write, SpringyEvents.delete, null, null, true);
+        this.snapshot.collection.subscribe(subscriber);
+    }
+
+    set = (value) => {
+        let query = {"_id": this.snapshot.key};
+        let subscriber = new DataSubscriber(this.snapshot.collection.name, query, SpringyScope.write, SpringyEvents.update, value, null, true);
+        this.snapshot.collection.subscribe(subscriber);
+    }
 }
 
 function uuidv4() {
-    return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+    return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c =>
         (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
     );
 }
