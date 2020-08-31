@@ -203,7 +203,7 @@ class OnDisconnect {
 class DataSubscriber {
 
     constructor(collection, key, action, event, value, callback, onDisconnect) {
-        this.sid = uuidv4();
+        this.uid = uuidv4();
         this.collection = collection;
         this.key = key;
         this.action = action;
@@ -215,7 +215,7 @@ class DataSubscriber {
 
     encode = () => {
         let encoded = {
-            _sid: this.sid,
+            _uid: this.uid,
             collection: this.collection,
             key: this.key,
             action: this.action,
@@ -227,7 +227,7 @@ class DataSubscriber {
     }
 
     get identifier() {
-        return this.sid;
+        return this.uid;
     }
 }
 
@@ -235,13 +235,13 @@ class DataSubscriber {
 class DataSnapshot {
 
     constructor(data) {
-        this.sid = data["_sid"];
+        this.uid = data["_uid"];
         this.key = data["key"];
         this.value = data["value"] ?? {};
     }
 
     get identifier() {
-        return this.sid;
+        return this.uid;
     }
 }
 

@@ -8,7 +8,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
-	"go.springy.io/model"
 	"go.springy.io/util"
 	"log"
 	"time"
@@ -46,42 +45,38 @@ func init() {
 	fmt.Println(databases)
 }
 
-func Start() {
-
-}
-
-func Perform(client *Client, request *model.DatabaseRequest) {
+func processRequest(client *Client, request *Request) {
 
 	switch request.Action {
-	case model.Read:
+	case Read:
 		// Performs a single find request
 		_find(client, request)
 		break
-	case model.Write:
+	case Write:
 		// Performs a single CRUD operation
 		switch request.Operation {
-		case model.Insert:
+		case Insert:
 			_insert(client, request)
 			break
-		case model.Update:
+		case Update:
 			_update(client, request)
 			break
-		case model.Delete:
+		case Delete:
 			_delete(client, request)
 			break
-		case model.Replace:
+		case Replace:
 			_replace(client, request)
 			break
 		}
 		break
-	case model.Watch:
+	case Watch:
 		// Performs a change stream watch
 		_watch(client, request)
 		break
 	}
 }
 
-func _find(client *Client, request *model.DatabaseRequest) {
+func _find(client *Client, request *Request) {
 
 	context := context.Background()
 	collection := database.Collection(request.Collection)
@@ -95,14 +90,14 @@ func _find(client *Client, request *model.DatabaseRequest) {
 	}
 
 	var snapshot = bson.M{
-		"_sid":  request.Identifier,
+		"_uid":  request.Identifier,
 		"key":   request.Collection,
 		"value": results,
 	}
-	go client.OnData(snapshot)
+	go client.writeResponse(snapshot)
 }
 
-func _insert(client *Client, request *model.DatabaseRequest) {
+func _insert(client *Client, request *Request) {
 	collection := database.Collection(request.Collection)
 	result, err := collection.InsertOne(context.Background(), request.Value)
 
@@ -111,13 +106,13 @@ func _insert(client *Client, request *model.DatabaseRequest) {
 	}
 
 	var snapshot = bson.M{
-		"_sid": request.Identifier,
+		"_uid": request.Identifier,
 		"key":  result.InsertedID,
 	}
-	go client.OnData(snapshot)
+	go client.writeResponse(snapshot)
 }
 
-func _update(client *Client, request *model.DatabaseRequest) {
+func _update(client *Client, request *Request) {
 	//collection := database.Collection(request.Collection)
 	//id, _ := primitive.ObjectIDFromHex("5d9e0173c1305d2a54eb431a")
 	//result, err := collection.UpdateOne(
@@ -130,7 +125,7 @@ func _update(client *Client, request *model.DatabaseRequest) {
 	//}
 }
 
-func _delete(client *Client, request *model.DatabaseRequest) {
+func _delete(client *Client, request *Request) {
 	collection := database.Collection(request.Collection)
 	docID, _ := primitive.ObjectIDFromHex(request.Key)
 	var match = bson.M{"_id": docID}
@@ -142,18 +137,18 @@ func _delete(client *Client, request *model.DatabaseRequest) {
 	}
 
 	var snapshot = bson.M{
-		"_sid": request.Identifier,
+		"_uid": request.Identifier,
 		"key":  request.Key,
 	}
-	go client.OnData(snapshot)
+	go client.writeResponse(snapshot)
 }
 
-func _replace(client *Client, request *model.DatabaseRequest) {
+func _replace(client *Client, request *Request) {
 
 }
 
 // Starts watching (observing) a change stream
-func _watch(client *Client, request *model.DatabaseRequest) {
+func _watch(client *Client, request *Request) {
 
 	var matchingPipeline = bson.D{
 		{
@@ -184,10 +179,10 @@ func _watchChangeStream(identifier string, client *Client, context context.Conte
 		docKey, _ := data["documentKey"].(bson.M)
 		doc, _ := data["fullDocument"].(bson.M)
 		var snapshot = bson.M{
-			"_sid":  identifier,
+			"_uid":  identifier,
 			"key":   docKey["_id"],
 			"value": doc,
 		}
-		client.OnData(snapshot)
+		client.writeResponse(snapshot)
 	}
 }
