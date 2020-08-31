@@ -90,7 +90,7 @@ func _find(client *Client, request *Request) {
 	}
 
 	var snapshot = bson.M{
-		"_uid":  request.Identifier,
+		"_uid":  request.Uid,
 		"key":   request.Collection,
 		"value": results,
 	}
@@ -106,7 +106,7 @@ func _insert(client *Client, request *Request) {
 	}
 
 	var snapshot = bson.M{
-		"_uid": request.Identifier,
+		"_uid": request.Uid,
 		"key":  result.InsertedID,
 	}
 	go client.writeResponse(snapshot)
@@ -137,7 +137,7 @@ func _delete(client *Client, request *Request) {
 	}
 
 	var snapshot = bson.M{
-		"_uid": request.Identifier,
+		"_uid": request.Uid,
 		"key":  request.Key,
 	}
 	go client.writeResponse(snapshot)
@@ -165,7 +165,7 @@ func _watch(client *Client, request *Request) {
 	}
 
 	streamContext, _ := context.WithCancel(context.Background())
-	go _watchChangeStream(request.Identifier, client, streamContext, collectionStream)
+	go _watchChangeStream(request.Uid, client, streamContext, collectionStream)
 }
 
 func _watchChangeStream(identifier string, client *Client, context context.Context, stream *mongo.ChangeStream) {

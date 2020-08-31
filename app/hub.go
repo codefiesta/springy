@@ -56,7 +56,7 @@ func (h *Hub) Upgrade(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	client := &Client{hub: h, conn: conn, send: make(chan []byte, 256)}
+	client := &Client{hub: h, conn: conn, send: make(chan []byte, 256), requests: make(map[string]Request)}
 	client.hub.register <- client
 
 	// Allow collection of memory referenced by the caller by doing all work in new goroutines.

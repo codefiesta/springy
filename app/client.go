@@ -32,8 +32,8 @@ type Client struct {
 	conn *websocket.Conn
 	// Buffered channel of outbound messages.
 	send chan []byte
-	// Deferred requests to process on disconnect
-	deferred map[string]Request
+	// Deferred requests to process onDisconnect
+	requests map[string]Request
 }
 
 // read sends messages from the websocket connection to the hub.
@@ -45,6 +45,11 @@ func (c *Client) read() {
 	defer func() {
 		c.hub.unregister <- c
 		c.conn.Close()
+
+		//for k, v := range c.deferred {
+		//	log.Printf("🐳 %s = %v\n", k, v)
+		//	delete(c.deferred, k)
+		//}
 	}()
 
 	c.conn.SetReadLimit(maxMessageSize)
@@ -60,7 +65,16 @@ func (c *Client) read() {
 			log.Printf("error: %v", err)
 			break
 		}
-		processRequest(c, &request)
+
+		log.Printf("⭐️: %v\n", request)
+
+		if request.OnDisconnect {
+			// Defer the request to process on disconnect
+			c.requests[request.Uid] = request
+		} else {
+			// Immediately process the requests
+			processRequest(c, &request)
+		}
 	}
 }
 
@@ -75,6 +89,12 @@ func (c *Client) write() {
 	defer func() {
 		ticker.Stop()
 		c.conn.Close()
+
+		for k, v := range c.requests {
+			log.Printf("🐳: %s = %v\n", k, v)
+			delete(c.requests, k)
+		}
+
 	}()
 
 	for {

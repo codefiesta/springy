@@ -57,6 +57,7 @@ class Database {
 
     /// Publishes a message out to the database
     publish = (message) => {
+        console.debug(`📬 ${message}`);
         this.#queueMessage(() => {
             this.ws.send(message);
         });
@@ -169,7 +170,9 @@ class Document {
     constructor(collection, key) {
         this.collection = collection;
         this.key = key;
+        this.value = {};
         this._onDisconnect = new OnDisconnect(this);
+        // Send a message to the server to either create an empty doc or back fill this information
     }
 
     // Writes data to this document location.
@@ -191,7 +194,9 @@ class OnDisconnect {
     }
 
     remove = () => {
-
+        // Generate a message to send to the database
+        let subscriber = new DataSubscriber(this.doc.collection.name, this.doc.key, SpringyActions.write, SpringyEvents.delete, null, {}, true);
+        this.doc.collection.subscribe(subscriber);
     }
 
     set = (value, callback) => {
