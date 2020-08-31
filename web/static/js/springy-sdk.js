@@ -39,15 +39,12 @@ class Database {
     #addSocketHandlers = () => {
 
         let self = this;
-
         this.ws.onopen = function (e) {
             self.isConnected = true;
         };
-
         this.ws.onclose = function (e) {
             self.isConnected = false;
         };
-
         this.ws.onmessage = function (e) {
             try {
                 let data = JSON.parse(e.data);
@@ -205,13 +202,14 @@ class OnDisconnect {
 
 class DataSubscriber {
 
-    constructor(collection, key, action, event, value, callback) {
+    constructor(collection, key, action, event, value, callback, onDisconnect) {
         this.sid = uuidv4();
         this.collection = collection;
         this.key = key;
         this.action = action;
         this.event = event;
         this.value = value;
+        this.onDisconnect = onDisconnect ?? false;
         this.callback = callback;
     }
 
@@ -222,7 +220,8 @@ class DataSubscriber {
             key: this.key,
             action: this.action,
             operation: this.event,
-            value: this.value ?? {}
+            value: this.value ?? {},
+            onDisconnect: this.onDisconnect
         };
         return JSON.stringify(encoded);
     }
