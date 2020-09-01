@@ -56,8 +56,8 @@ func (c *Client) read() {
 		c.hub.unregister <- c
 		c.conn.Close()
 
+		// Process our onDisconnect requests
 		for k, v := range c.requests {
-			log.Printf("🐳 %s = %v\n", k, v)
 			go processRequest(c, &v)
 			delete(c.requests, k)
 		}
@@ -76,8 +76,6 @@ func (c *Client) read() {
 			log.Printf("error: %v", err)
 			break
 		}
-
-		log.Printf("⭐️: %v\n", request)
 
 		if request.OnDisconnect {
 			// Defer the request to process on disconnect
@@ -100,12 +98,6 @@ func (c *Client) write() {
 	defer func() {
 		ticker.Stop()
 		c.conn.Close()
-
-		for k, v := range c.requests {
-			log.Printf("🐳: %s = %v\n", k, v)
-			delete(c.requests, k)
-		}
-
 	}()
 
 	for {
