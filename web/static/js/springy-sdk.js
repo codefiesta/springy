@@ -34,10 +34,10 @@ class Database {
         this.isConnected = false;
         this.collections = new Map();
         this.ws = new WebSocket(config.databaseURL);
-        this.#addSocketHandlers();
+        this.addSocketHandlers();
     }
 
-    #addSocketHandlers = () => {
+    addSocketHandlers = () => {
 
         let self = this;
         this.ws.onopen = function (e) {
@@ -49,13 +49,9 @@ class Database {
         this.ws.onmessage = function (e) {
             try {
                 let data = JSON.parse(e.data);
-                if (Array.isArray(data)) {
-                    data.forEach(message => {
-                        self.#broadcast(message);
-                    });
-                } else {
-                    self.#broadcast(data);
-                }
+                data.forEach(message => {
+                    self.broadcast(message);
+                });
             } catch (err) {
                 console.error(err, e.data);
             }
@@ -64,26 +60,25 @@ class Database {
 
     /// Publishes a message out to the database
     publish = (message) => {
-        this.#queueMessage(() => {
-            console.debug(`🔥`, message);
+        this.queueMessage(() => {
             this.ws.send(message);
         });
     };
 
     /// Broadcasts an incoming message to collection handlers
-    #broadcast = (message) => {
+    broadcast = (message) => {
         this.collections.forEach((collection, key) => {
             collection.notify(message);
         });
     };
 
-    #queueMessage = (callback) => {
+    queueMessage = (callback) => {
         if (this.ws.readyState === 1) {
             callback();
         } else {
             let self = this;
             setTimeout(() => {
-                self.#queueMessage(callback);
+                self.queueMessage(callback);
             }, 5);
         }
     };

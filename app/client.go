@@ -23,8 +23,6 @@ const (
 )
 
 var (
-	newline = []byte{'\n'}
-	space   = []byte{' '}
 	openBracket   = []byte{'['}
 	closeBracket   = []byte{']'}
 	comma   = []byte{','}
@@ -116,13 +114,11 @@ func (c *Client) write() {
 				log.Print("c.conn.NextWriter", err)
 				return
 			}
-			n := len(c.send)
 
-			if n > 0 {
-				w.Write(openBracket)
-			}
 
+			w.Write(openBracket)
 			w.Write(message)
+			n := len(c.send)
 
 			// Add queued messages to the array
 			for i := 0; i < n; i++ {
@@ -130,9 +126,7 @@ func (c *Client) write() {
 				w.Write(<-c.send)
 			}
 
-			if n > 0 {
-				w.Write(closeBracket)
-			}
+			w.Write(closeBracket)
 
 			if err := w.Close(); err != nil {
 				return
