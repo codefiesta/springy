@@ -50,7 +50,6 @@ class Database {
             try {
                 let data = JSON.parse(e.data);
                 if (Array.isArray(data)) {
-                    console.log(`✅✅✅✅✅✅✅✅`)
                     data.forEach(message => {
                         self.#broadcast(message);
                     });
