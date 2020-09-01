@@ -88,6 +88,7 @@ func _findOne(client *Client, request *Request) {
 			"_uid":  request.Uid,
 			"value": bson.M{
 				"_id": primitive.NewObjectID(),
+				"_operation": "findOne",
 			},
 		}
 	} else {
@@ -118,6 +119,7 @@ func _find(client *Client, request *Request) {
 
 	var doc = bson.M{
 		"_uid":  request.Uid,
+		"_operation": "find",
 		"value": results,
 	}
 	go client.writeResponse(doc)
@@ -138,6 +140,7 @@ func _insert(client *Client, request *Request) {
 	request.Value["_id"] = result.InsertedID
 	var doc = bson.M{
 		"_uid": request.Uid,
+		"_operation": "insert",
 		"value":  request.Value,
 	}
 	go client.writeResponse(doc)
@@ -160,6 +163,7 @@ func _delete(client *Client, request *Request) {
 
 	var doc = bson.M{
 		"_uid":  request.Uid,
+		"_operation": "delete",
 		"value": request.Query,
 	}
 
@@ -188,10 +192,10 @@ func _watch(client *Client, request *Request) {
 	}
 
 	streamContext, _ := context.WithCancel(context.Background())
-	go _watchChangeStream(request.Uid, client, streamContext, collectionStream)
+	go _watchChangeStream(request, client, streamContext, collectionStream)
 }
 
-func _watchChangeStream(identifier string, client *Client, context context.Context, stream *mongo.ChangeStream) {
+func _watchChangeStream(request *Request, client *Client, context context.Context, stream *mongo.ChangeStream) {
 	defer stream.Close(context)
 	for stream.Next(context) {
 		var data bson.M
@@ -208,10 +212,13 @@ func _watchChangeStream(identifier string, client *Client, context context.Conte
 				"_id": key["_id"],
 			}
 		}
+
+		doc["_operation"] = request.Operation
+
 		var snapshot = bson.M{
-			"_uid":  identifier,
+			"_uid":  request.Uid,
 			"value": doc,
 		}
-		client.writeResponse(snapshot)
+		go client.writeResponse(snapshot)
 	}
 }

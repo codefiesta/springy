@@ -25,6 +25,9 @@ const (
 var (
 	newline = []byte{'\n'}
 	space   = []byte{' '}
+	openBracket   = []byte{'['}
+	closeBracket   = []byte{']'}
+	comma   = []byte{','}
 )
 
 // Client is a middleman between the websocket connection and the hub.
@@ -55,7 +58,7 @@ func (c *Client) read() {
 
 		for k, v := range c.requests {
 			log.Printf("🐳 %s = %v\n", k, v)
-			processRequest(c, &v)
+			go processRequest(c, &v)
 			delete(c.requests, k)
 		}
 	}()
@@ -121,13 +124,22 @@ func (c *Client) write() {
 				log.Print("c.conn.NextWriter", err)
 				return
 			}
+			n := len(c.send)
+
+			if n > 0 {
+				w.Write(openBracket)
+			}
+
 			w.Write(message)
 
-			// Add queued chat messages to the current websocket message.
-			n := len(c.send)
+			// Add queued messages to the array
 			for i := 0; i < n; i++ {
-				w.Write(newline)
+				w.Write(comma)
 				w.Write(<-c.send)
+			}
+
+			if n > 0 {
+				w.Write(closeBracket)
 			}
 
 			if err := w.Close(); err != nil {

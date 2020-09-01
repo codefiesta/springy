@@ -49,7 +49,14 @@ class Database {
         this.ws.onmessage = function (e) {
             try {
                 let data = JSON.parse(e.data);
-                self.#broadcast(data);
+                if (Array.isArray(data)) {
+                    console.log(`✅✅✅✅✅✅✅✅`)
+                    data.forEach(message => {
+                        self.#broadcast(message);
+                    });
+                } else {
+                    self.#broadcast(data);
+                }
             } catch (err) {
                 console.error(err, e.data);
             }
@@ -58,8 +65,8 @@ class Database {
 
     /// Publishes a message out to the database
     publish = (message) => {
-        console.debug(`📬 ${message}`);
         this.#queueMessage(() => {
+            console.debug(`🔥`, message);
             this.ws.send(message);
         });
     };
