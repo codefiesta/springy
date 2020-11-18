@@ -23,9 +23,9 @@ const (
 )
 
 var (
-	openBracket   = []byte{'['}
-	closeBracket   = []byte{']'}
-	comma   = []byte{','}
+	openBracket  = []byte{'['}
+	closeBracket = []byte{']'}
+	comma        = []byte{','}
 )
 
 // Client is a middleman between the websocket connection and the hub.
@@ -114,7 +114,6 @@ func (c *Client) write() {
 				log.Print("c.conn.NextWriter", err)
 				return
 			}
-
 
 			w.Write(openBracket)
 			w.Write(message)

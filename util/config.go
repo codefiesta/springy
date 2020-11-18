@@ -16,8 +16,8 @@ type ServerConfiguration struct {
 }
 
 type DatabaseConfiguration struct {
-	Uri        string
-	Name       string
+	Uri  string
+	Name string
 }
 
 type Configuration struct {

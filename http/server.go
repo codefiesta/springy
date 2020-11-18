@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	hub  *app.Hub
+	hub *app.Hub
 )
 
 func init() {

@@ -96,9 +96,9 @@ func _findOne(client *Client, request *Request) {
 	}
 
 	var response = bson.M{
-		"_uid": request.Uid,
+		"_uid":       request.Uid,
 		"_operation": request.Operation,
-		"value":  doc,
+		"value":      doc,
 	}
 	go client.writeResponse(response)
 }
@@ -121,9 +121,9 @@ func _find(client *Client, request *Request) {
 	}
 
 	var response = bson.M{
-		"_uid":  request.Uid,
+		"_uid":       request.Uid,
 		"_operation": request.Operation,
-		"value": results,
+		"value":      results,
 	}
 	go client.writeResponse(response)
 }
@@ -142,9 +142,9 @@ func _insert(client *Client, request *Request) {
 
 	request.Value["_id"] = result.InsertedID
 	var response = bson.M{
-		"_uid": request.Uid,
+		"_uid":       request.Uid,
 		"_operation": request.Operation,
-		"value":  request.Value,
+		"value":      request.Value,
 	}
 	go client.writeResponse(response)
 }
@@ -160,9 +160,9 @@ func _update(client *Client, request *Request) {
 	}
 	request.Value["_id"] = result.UpsertedID
 	var response = bson.M{
-		"_uid": request.Uid,
+		"_uid":       request.Uid,
 		"_operation": request.Operation,
-		"value":  request.Value,
+		"value":      request.Value,
 	}
 	go client.writeResponse(response)
 }
@@ -180,9 +180,9 @@ func _delete(client *Client, request *Request) {
 	}
 
 	var response = bson.M{
-		"_uid":  request.Uid,
+		"_uid":       request.Uid,
 		"_operation": request.Operation,
-		"value": request.Query,
+		"value":      request.Query,
 	}
 
 	go client.writeResponse(response)
@@ -199,9 +199,9 @@ func _replace(client *Client, request *Request) {
 	}
 	request.Value["_id"] = result.UpsertedID
 	var response = bson.M{
-		"_uid": request.Uid,
+		"_uid":       request.Uid,
 		"_operation": request.Operation,
-		"value":  request.Value,
+		"value":      request.Value,
 	}
 	go client.writeResponse(response)
 }
@@ -255,9 +255,9 @@ func _watchChangeStream(client *Client, request *Request, context context.Contex
 		}
 
 		var response = bson.M{
-			"_uid":  request.Uid,
+			"_uid":       request.Uid,
 			"_operation": request.Operation,
-			"value": doc,
+			"value":      doc,
 		}
 		go client.writeResponse(response)
 	}
