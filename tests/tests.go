@@ -3,7 +3,10 @@ package tests
 import (
 	"testing"
 	"fmt"
+	"time"
 )
+
+const shortDuration = 1 * time.Millisecond // a reasonable duration to block in an example
 
 func assertEqual(t *testing.T, a interface{}, b interface{}, message string) {
 	if a == b {
