@@ -10,14 +10,12 @@ import (
 )
 
 var (
-	tmpl *template.Template
 	hub  *app.Hub
 )
 
 func init() {
 
 	hub = app.NewHub()
-	tmpl = template.Must(template.ParseFiles("web/templates/index.html"))
 
 	initRoutes()
 	// Run the hub in a new goroutine
@@ -33,6 +31,7 @@ func initRoutes() {
 
 /// Returns the index.html
 func indexRoute(w http.ResponseWriter, r *http.Request) {
+	tmpl := template.Must(template.ParseFiles("web/templates/index.html"))
 	tmpl.Execute(w, nil)
 }
 

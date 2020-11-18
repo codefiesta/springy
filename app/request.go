@@ -5,7 +5,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// Encapsulates a basic request sent from a client
+// Encapsulates a basic pub/sub request sent from a client
 type Request struct {
 
 	// The request unique identifier
@@ -43,7 +43,5 @@ func (request *Request) filter() bson.M {
 			filters[k] = v
 		}
 	}
-
-
 	return filters
 }

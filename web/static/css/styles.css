@@ -1,27 +1,35 @@
-.navbar-header {
-    margin: .5rem .5rem .25rem .5rem;
-    padding: 1rem;
-    border-radius: .5rem;
+:root {
+    --blue: #007bff;
+    --indigo: #6610f2;
+    --purple: #6f42c1;
+    --pink: #e83e8c;
+    --red: #dc3545;
+    --orange: #fd7e14;
+    --yellow: #ffc107;
+    --green: #28a745;
+    --teal: #20c997;
+    --cyan: #17a2b8;
+    --white: #fff;
+    --gray: #6c757d;
+    --gray-dark: #343a40;
+    --primary: #007bff;
+    --secondary: #6c757d;
+    --success: #28a745;
+    --info: #17a2b8;
+    --warning: #ffc107;
+    --danger: #dc3545;
+    --light: #f8f9fa;
+    --dark: #343a40;
+    --loader-width: 10rem;
+    --loader-height: var(--loader-width);
+    --loader-border-color: rgba(29, 161, 242, 0.2);
+    --loader-border-color-fill: linear-gradient(var(--blue) 0% var(--purple) 16%, var(--red) 32%, var(--yellow) 48%, var(--green) 64%, var(--green) 100%);
 }
 
-.container-flex {
+body {
+    height: 100vh;
+    width: 100vw;
     display: flex;
-    min-height: 88%;
-}
-
-.container-body {
-    background-color: #ececec;
-    margin: .25rem .25rem .5rem .5rem;
-    padding: 1rem;
-    border-radius: .5rem;
-    flex: 1 70%;
-}
-
-.container-sidebar {
-    background-color: #80bdff;
-    margin: .25rem .5rem .5rem .25rem;
-    padding: 1rem;
-    max-width: 20rem;
-    border-radius: .5rem;
-    flex: 1 30%;
+    flex-direction: column;
+    padding: .5rem;
 }

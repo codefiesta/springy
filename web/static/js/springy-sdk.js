@@ -12,6 +12,7 @@ const SpringyEvents = Object.freeze({
     replace: "replace",
 });
 
+// Represents a Springy Client
 class Springy {
 
     constructor(config) {

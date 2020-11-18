@@ -8,9 +8,13 @@ import (
 type Scope int
 
 const (
+	// Single Read Request
 	Find Scope = iota
+	// Single Read Request
 	FindOne
+	// Single Write Request
 	Write
+	// Subscribe Request
 	Watch
 )
 

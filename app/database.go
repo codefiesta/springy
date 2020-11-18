@@ -85,10 +85,8 @@ func _findOne(client *Client, request *Request) {
 	doc := bson.M{}
 	if result.Err() == mongo.ErrNoDocuments {
 		doc = bson.M{
-			"_uid":  request.Uid,
 			"value": bson.M{
 				"_id": primitive.NewObjectID(),
-				"_operation": "findOne",
 			},
 		}
 	} else {
@@ -97,7 +95,12 @@ func _findOne(client *Client, request *Request) {
 		}
 	}
 
-	go client.writeResponse(doc)
+	var response = bson.M{
+		"_uid": request.Uid,
+		"_operation": request.Operation,
+		"value":  doc,
+	}
+	go client.writeResponse(response)
 }
 
 func _find(client *Client, request *Request) {
@@ -117,12 +120,12 @@ func _find(client *Client, request *Request) {
 		return
 	}
 
-	var doc = bson.M{
+	var response = bson.M{
 		"_uid":  request.Uid,
-		"_operation": "find",
+		"_operation": request.Operation,
 		"value": results,
 	}
-	go client.writeResponse(doc)
+	go client.writeResponse(response)
 }
 
 func _insert(client *Client, request *Request) {
@@ -138,15 +141,30 @@ func _insert(client *Client, request *Request) {
 	}
 
 	request.Value["_id"] = result.InsertedID
-	var doc = bson.M{
+	var response = bson.M{
 		"_uid": request.Uid,
-		"_operation": "insert",
+		"_operation": request.Operation,
 		"value":  request.Value,
 	}
-	go client.writeResponse(doc)
+	go client.writeResponse(response)
 }
 
 func _update(client *Client, request *Request) {
+	collection := database.Collection(request.Collection)
+	result, err := collection.UpdateOne(context.Background(), request.filter(), request.Value)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if request.OnDisconnect {
+		return
+	}
+	request.Value["_id"] = result.UpsertedID
+	var response = bson.M{
+		"_uid": request.Uid,
+		"_operation": request.Operation,
+		"value":  request.Value,
+	}
+	go client.writeResponse(response)
 }
 
 func _delete(client *Client, request *Request) {
@@ -161,17 +179,31 @@ func _delete(client *Client, request *Request) {
 		return
 	}
 
-	var doc = bson.M{
+	var response = bson.M{
 		"_uid":  request.Uid,
-		"_operation": "delete",
+		"_operation": request.Operation,
 		"value": request.Query,
 	}
 
-	go client.writeResponse(doc)
+	go client.writeResponse(response)
 }
 
 func _replace(client *Client, request *Request) {
-
+	collection := database.Collection(request.Collection)
+	result, err := collection.ReplaceOne(context.Background(), request.filter(), request.Value)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if request.OnDisconnect {
+		return
+	}
+	request.Value["_id"] = result.UpsertedID
+	var response = bson.M{
+		"_uid": request.Uid,
+		"_operation": request.Operation,
+		"value":  request.Value,
+	}
+	go client.writeResponse(response)
 }
 
 // Starts watching (observing) a change stream
@@ -192,10 +224,10 @@ func _watch(client *Client, request *Request) {
 	}
 
 	streamContext, _ := context.WithCancel(context.Background())
-	go _watchChangeStream(request, client, streamContext, collectionStream)
+	go _watchChangeStream(client, request, streamContext, collectionStream)
 }
 
-func _watchChangeStream(request *Request, client *Client, context context.Context, stream *mongo.ChangeStream) {
+func _watchChangeStream(client *Client, request *Request, context context.Context, stream *mongo.ChangeStream) {
 	defer stream.Close(context)
 	for stream.Next(context) {
 		var data bson.M
@@ -206,19 +238,27 @@ func _watchChangeStream(request *Request, client *Client, context context.Contex
 		key, _ := data["documentKey"].(bson.M)
 		doc, _ := data["fullDocument"].(bson.M)
 
-		// Deletion change
 		if doc == nil {
-			doc = bson.M{
-				"_id": key["_id"],
+			switch request.Operation {
+			case Update, Replace:
+				request.Query["_id"] = key["_id"].(primitive.ObjectID).Hex()
+				_findOne(client, request)
+				return
+			case Delete:
+				doc = bson.M{
+					"_id": key["_id"],
+				}
+				break
+			default:
+				break
 			}
 		}
 
-		doc["_operation"] = request.Operation
-
-		var snapshot = bson.M{
+		var response = bson.M{
 			"_uid":  request.Uid,
+			"_operation": request.Operation,
 			"value": doc,
 		}
-		go client.writeResponse(snapshot)
+		go client.writeResponse(response)
 	}
 }
