@@ -18,3 +18,13 @@ func assertEqual(t *testing.T, a interface{}, b interface{}, message string) {
 	}
 	t.Fatal(message)
 }
+
+func assertNotNil(t *testing.T, a interface{}, message string) {
+	if a != nil {
+		return
+	}
+	if len(message) == 0 {
+		message = fmt.Sprintf("%v != nil", a)
+	}
+	t.Fatal(message)
+}
