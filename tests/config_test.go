@@ -1,13 +1,14 @@
 package tests
 
 import (
+	"github.com/stretchr/testify/assert"
 	"go.springy.io/util"
 	"testing"
 )
 
 func TestConfig(t *testing.T) {
-
-	c1 := util.Config()
-	c2 := util.Config()
-	assertEqual(t, c1, c2, "The configuration should be a singleton")
+	config := util.Config()
+	assert.NotNil(t, config.Database.Name)
+	assert.NotNil(t, config.Database.Uri)
+	assert.Equal(t, config.Server.Port, 8080)
 }
