@@ -8,7 +8,7 @@ import (
 
 func TestHub(t *testing.T) {
 
-	_, cancel := context.WithTimeout(context.Background(), shortDuration)
+	_, cancel := context.WithTimeout(context.Background(), longDuration)
 	defer cancel()
 
 	h1 := app.NewHub()
