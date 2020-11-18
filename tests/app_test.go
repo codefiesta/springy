@@ -1,15 +1,31 @@
 package tests
 
 import (
+	"fmt"
 	"go.springy.io/app"
+	"go.springy.io/util"
 	"testing"
 )
 
-func TestHub(t *testing.T) {
+func TestConfig(t *testing.T) {
 
+	c1 := util.Config()
+	c2 := util.Config()
+	assertEqual(t, c1, c2, "The configuration should be a singleton")
+}
+
+func TestHub(t *testing.T) {
 	h1 := app.NewHub()
 	h2 := app.NewHub()
-	if h1 != h2 {
-		t.Errorf("The hub should be a singleton")
+	assertEqual(t, h1, h2, "The hub should be a singleton")
+}
+
+func assertEqual(t *testing.T, a interface{}, b interface{}, message string) {
+	if a == b {
+		return
 	}
+	if len(message) == 0 {
+		message = fmt.Sprintf("%v != %v", a, b)
+	}
+	t.Fatal(message)
 }

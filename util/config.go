@@ -3,7 +3,9 @@ package util
 import (
 	"github.com/spf13/viper"
 	"log"
+	"os"
 	"sync"
+	"fmt"
 )
 
 var (
@@ -30,9 +32,14 @@ func Config() *Configuration {
 
 	once.Do(func() {
 
+		path, _ := os.Getwd()
+		fmt.Print(path)
 		log.Println("Configuring ...")
 		viper.SetConfigName("config")
 		viper.AddConfigPath(".")
+		viper.AddConfigPath("..")
+		viper.AddConfigPath(path)
+		viper.AutomaticEnv()
 
 		if err := viper.ReadInConfig(); err != nil {
 			log.Fatalf("Error reading config file, %s", err)
