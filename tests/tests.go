@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-const shortDuration = 1 * time.Millisecond // a reasonable duration to block in an example
+const shortDuration = 1 * time.Second // a reasonable duration to block in a test
 
 func assertEqual(t *testing.T, a interface{}, b interface{}, message string) {
 	if a == b {
