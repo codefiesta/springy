@@ -21,6 +21,11 @@ services:
       - '27017:27017'
     volumes:
       - 'mongodata:/data/db'
+#    networks:
+#      - network-internal:
 
 volumes:
   mongodata:
+
+#networks:
+#  network-internal:

@@ -22,7 +22,7 @@ func init() {
 
 	fmt.Println("Connecting ...")
 	config = util.Config()
-	client, err := mongo.NewClient(options.Client().ApplyURI(config.Database.Uri))
+	client, err := mongo.NewClient(options.Client().ApplyURI(config.Database.Uri()))
 	if err != nil {
 		panic(err)
 	}
@@ -30,17 +30,17 @@ func init() {
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 	err = client.Connect(ctx)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("💩 [Unable to connect to mongo]: ", err)
 	}
 
 	err = client.Ping(ctx, readpref.Primary())
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("💩 [Unable to ping mongo]: ", err)
 	}
 	database = client.Database(config.Database.Name)
 	databases, err := client.ListDatabaseNames(ctx, bson.M{})
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("💩 [Unable to list mongo databases]: ", err)
 	}
 	fmt.Println(databases)
 }
