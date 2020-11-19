@@ -6,6 +6,9 @@ FROM mongo:latest
 
 LABEL maintainer="Springy.io <springy@spring.io>"
 
+# Copy the mongo init script which configures the db
+ADD mongo-init.js /docker-entrypoint-initdb.d/
+
 # Define mountable directories.
 VOLUME ["/data/db"]
 
