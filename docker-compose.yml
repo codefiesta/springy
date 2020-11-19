@@ -1,0 +1,26 @@
+version: '3.3'
+services:
+
+  # The Springy Micro Service
+  springy:
+    container_name: 'springy'
+    build:
+      context: .
+      dockerfile: ./.docker/Dockerfile
+    ports:
+      - '8080:8080'
+    #restart: unless-stopped
+    depends_on:
+      - mongodb
+
+  # The MongoDB Service
+  mongodb:
+    container_name: 'mongo'
+    image: 'mongo:latest'
+    ports:
+      - '27017:27017'
+    volumes:
+      - 'mongodata:/data/db'
+
+volumes:
+  mongodata:
