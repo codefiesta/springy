@@ -1,10 +1,16 @@
-FROM golang:1.15.1-alpine
+#
+# Spring Microservice Dockerfile
+#
 
-RUN apk update && apk upgrade && \
-    apk add --no-cache bash git openssh
+FROM golang:1.15.1-alpine
 
 LABEL maintainer="Springy.io <springy@spring.io>"
 
+# Alpine container is limited so add bash, git, openssh
+RUN apk update && apk upgrade && \
+    apk add --no-cache bash git openssh
+
+# Define working directory.
 WORKDIR /springy
 
 # Copy go mod and sum files
@@ -16,7 +22,7 @@ RUN go mod download
 # Copy the source from the current directory to the Working Directory inside the container
 COPY . .
 
-# Build the Go app
+# Compile the Go app into an executable
 RUN go build -o main .
 
 # Expose port 8080 to the outside world

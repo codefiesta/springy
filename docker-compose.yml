@@ -6,7 +6,7 @@ services:
     container_name: 'springy'
     build:
       context: .
-      dockerfile: ./.docker/Dockerfile
+      dockerfile: ./.docker/springy/Dockerfile
     ports:
       - '8080:8080'
     #restart: unless-stopped
@@ -16,16 +16,19 @@ services:
   # The MongoDB Service
   mongodb:
     container_name: 'mongo'
-    image: 'mongo:latest'
+    build:
+      context: .
+      dockerfile: ./.docker/mongodb/Dockerfile
+    #image: 'mongo:latest'
     ports:
       - '27017:27017'
-    volumes:
-      - 'mongodata:/data/db'
+#    volumes:
+#      - 'mongodata:/data/db'
 #    networks:
 #      - network-internal:
 
-volumes:
-  mongodata:
+#volumes:
+#  mongodata:
 
 #networks:
 #  network-internal:
