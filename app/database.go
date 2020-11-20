@@ -109,11 +109,11 @@ func _find(client *Client, request *Request) {
 	collection := database.Collection(request.Collection)
 	cursor, err := collection.Find(context, bson.M{})
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("💩 [Unable to open collection]: ", err)
 	}
 	var results []bson.M
 	if err = cursor.All(context, &results); err != nil {
-		log.Fatal(err)
+		log.Fatal("💩 [Unable to open cursor]: ", err)
 	}
 
 	if request.OnDisconnect {
@@ -133,7 +133,7 @@ func _insert(client *Client, request *Request) {
 	result, err := collection.InsertOne(context.Background(), request.Value)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("💩 [Unable to insert]: ", err)
 	}
 
 	if request.OnDisconnect {
@@ -153,7 +153,7 @@ func _update(client *Client, request *Request) {
 	collection := database.Collection(request.Collection)
 	result, err := collection.UpdateOne(context.Background(), request.filter(), request.Value)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("💩 [Unable to update]: ", err)
 	}
 	if request.OnDisconnect {
 		return
@@ -172,7 +172,7 @@ func _delete(client *Client, request *Request) {
 	_, err := collection.DeleteOne(context.Background(), request.filter())
 
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("💩 [Unable to delete]: ", err)
 	}
 
 	if request.OnDisconnect {
@@ -192,7 +192,7 @@ func _replace(client *Client, request *Request) {
 	collection := database.Collection(request.Collection)
 	result, err := collection.ReplaceOne(context.Background(), request.filter(), request.Value)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("💩 [Unable to replace]: ", err)
 	}
 	if request.OnDisconnect {
 		return
@@ -220,7 +220,7 @@ func _watch(client *Client, request *Request) {
 	collectionStream, err := collection.Watch(context.TODO(), mongo.Pipeline{matchingPipeline})
 
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("💩 [Unable to watch]: ", err)
 	}
 
 	streamContext, _ := context.WithCancel(context.Background())

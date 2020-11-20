@@ -1,13 +1,13 @@
-version: '3.3'
+version: '3.4'
 
 services:
 
   # Springy Micro Service
   springy:
-    container_name: 'springy'
     build:
       context: .
       dockerfile: ./.docker/springy/Dockerfile
+    container_name: 'springy'
     ports:
       - '8080:8080'
     depends_on:
@@ -15,9 +15,17 @@ services:
 
   # MongoDB
   mongodb:
-    container_name: 'mongo'
     build:
       context: .docker/mongodb
+    container_name: 'mongodb'
+    hostname: 'mongodb'
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: $MONGO_ROOT_USER
+      MONGO_INITDB_ROOT_PASSWORD: $MONGO_ROOT_PASSWORD
+      MONGO_INITDB_USERNAME: $MONGO_USER
+      MONGO_INITDB_PASSWORD: $MONGO_PASSWORD
+      MONGO_INITDB_DATABASE: $MONGO_DB
+      MONGO_REPLICA_SET: $MONGO_REPLICA_SET
     ports:
       - '27017:27017'
 
