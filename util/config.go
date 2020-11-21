@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"net/url"
 )
 
 var (
@@ -49,12 +50,20 @@ func Config() *Configuration {
 		viper.AddConfigPath(".")
 		viper.AddConfigPath("..")
 		viper.AddConfigPath(path)
-		viper.AutomaticEnv()
+		//viper.AutomaticEnv()
+		viper.SetConfigFile(".env")
+
 
 		if err := viper.ReadInConfig(); err != nil {
 			log.Fatalf("Error reading config file, %s", err)
 		}
 		err := viper.Unmarshal(&shared)
+
+		fmt.Print(viper.GetString("MONGO_ROOT_PASSWORD"))
+
+		encoded := url.QueryEscape(viper.GetString("MONGO_ROOT_PASSWORD"))
+		fmt.Println(encoded)
+		fmt.Println(viper.ConfigFileUsed())
 
 		if err != nil {
 			log.Fatalf("unable to decode into struct, %v", err)
