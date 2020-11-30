@@ -6,6 +6,9 @@ import (
 	"testing"
 )
 
+// See: http://thylong.com/golang/2016/mocking-mongo-in-golang/
+// See: https://medium.com/better-programming/unit-testing-code-using-the-mongo-go-driver-in-golang-7166d1aa72c0
+// for mocking database connection
 func TestEnv(t *testing.T) {
 	env := app.Env()
 	assert.NotNil(t, env.Database.Db)
