@@ -1,4 +1,4 @@
-package app
+package api
 
 import (
 	"go.mongodb.org/mongo-driver/bson"
@@ -6,7 +6,7 @@ import (
 )
 
 // Encapsulates a basic pub/sub request sent from a client
-type Request struct {
+type DocumentRequest struct {
 
 	// The request unique identifier
 	Uid string `json:"_uid"`
@@ -18,10 +18,10 @@ type Request struct {
 	Query map[string]interface{} `json:"query"`
 
 	// The scope of work to perform
-	Scope Scope `json:"scope"`
+	Scope DocumentScope `json:"scope"`
 
 	// The operation to observe or perform
-	Operation Operation `json:"operation"`
+	Operation DocumentOperation `json:"operation"`
 
 	// The document value (optional)
 	Value map[string]interface{} `json:"value"`
@@ -31,7 +31,7 @@ type Request struct {
 }
 
 // Builds a document filter based on the query passed into the request
-func (request *Request) filter() bson.M {
+func (request *DocumentRequest) Filter() bson.M {
 
 	var filters = bson.M{}
 	for k, v := range request.Query {

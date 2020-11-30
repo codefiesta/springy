@@ -1,31 +1,31 @@
-package app
+package api
 
 import (
 	"bytes"
 	"encoding/json"
 )
 
-type Operation int
+type DocumentOperation int
 
 const (
-	Insert Operation = iota
+	Insert DocumentOperation = iota
 	Update
 	Delete
 	Replace
 )
 
-func (operation Operation) String() string {
+func (operation DocumentOperation) String() string {
 	return operationValue[operation]
 }
 
-var operationValue = map[Operation]string{
+var operationValue = map[DocumentOperation]string{
 	Insert:  "insert",
 	Update:  "update",
 	Delete:  "delete",
 	Replace: "replace",
 }
 
-var operationID = map[string]Operation{
+var operationID = map[string]DocumentOperation{
 	"insert":  Insert,
 	"update":  Update,
 	"delete":  Delete,
@@ -33,7 +33,7 @@ var operationID = map[string]Operation{
 }
 
 // MarshalJSON marshals the enum as a quoted json string
-func (operation Operation) MarshalJSON() ([]byte, error) {
+func (operation DocumentOperation) MarshalJSON() ([]byte, error) {
 	buffer := bytes.NewBufferString(`"`)
 	buffer.WriteString(operationValue[operation])
 	buffer.WriteString(`"`)
@@ -41,7 +41,7 @@ func (operation Operation) MarshalJSON() ([]byte, error) {
 }
 
 // UnmarshalJSON unmarshalls a quoted json string to the enum value
-func (operation *Operation) UnmarshalJSON(b []byte) error {
+func (operation *DocumentOperation) UnmarshalJSON(b []byte) error {
 	var j string
 	err := json.Unmarshal(b, &j)
 	if err != nil {

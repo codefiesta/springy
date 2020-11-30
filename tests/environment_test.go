@@ -2,7 +2,7 @@ package tests
 
 import (
 	"github.com/stretchr/testify/assert"
-	"go.springy.io/app"
+	"go.springy.io/pkg/util"
 	"testing"
 )
 
@@ -10,7 +10,7 @@ import (
 // See: https://medium.com/better-programming/unit-testing-code-using-the-mongo-go-driver-in-golang-7166d1aa72c0
 // for mocking database connection
 func TestEnv(t *testing.T) {
-	env := app.Env()
+	env := util.Env()
 	assert.NotNil(t, env.Database.Db)
 	assert.Equal(t, env.Database.Port, 27017)
 	assert.NotNil(t, env.Database.Host)

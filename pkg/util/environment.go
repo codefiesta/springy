@@ -1,4 +1,4 @@
-package app
+package util
 
 import (
 	"github.com/spf13/viper"
@@ -10,7 +10,7 @@ import (
 
 var (
 	env     *Environment
-	envOnce sync.Once
+	once sync.Once
 )
 
 type ServerEnv struct {
@@ -46,7 +46,7 @@ func (e *DatabaseEnv) Uri() string {
 //Our singleton instance of the Environment
 func Env() *Environment {
 
-	envOnce.Do(func() {
+	once.Do(func() {
 
 		log.Println("🍃 [Configuring Springy] 🍃")
 		viper.SetConfigFile(".env")
