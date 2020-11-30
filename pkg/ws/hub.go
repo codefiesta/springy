@@ -37,7 +37,7 @@ var (
 )
 
 func init() {
-	log.Println("Initializing Hub")
+	log.Println("❉ [Initializing Hub] ❉")
 	once.Do(func() {
 		hub = &Hub{
 			broadcast:  make(chan []byte),
@@ -75,7 +75,6 @@ func Run() {
 		select {
 		case e := <-subscriber:
 			if client, ok := e.Sender.(*Client); ok {
-				log.Println("⭐️", e.Data)
 				if snapshot, ok := e.Data.(api.DocumentSnapshot); ok {
 					go client.writeResponse(snapshot.Value)
 				}

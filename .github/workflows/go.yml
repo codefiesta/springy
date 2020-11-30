@@ -37,3 +37,4 @@ jobs:
     - name: Test
       run: echo "Testing"
       #run: go test -o springy.tests -c ./tests/ && ./springy.tests && rm -f ./springy.tests
+      #run  go test -v ./...

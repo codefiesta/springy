@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.springy.io/api"
@@ -54,7 +53,7 @@ func init() {
 	if err != nil {
 		log.Fatal("💩 [Unable to list mongo databases]: ", err)
 	}
-	fmt.Println(databases)
+	log.Println("🌴", databases)
 }
 
 func Run() {
@@ -63,16 +62,15 @@ func Run() {
 	for {
 		select {
 		case e := <-subscriber:
-			go process(e)
+			go handle(e)
 		}
 	}
 }
 
-// Processes a mongo event
-func process(e events.Event) {
+// Processes a document request event
+func handle(e events.Event) {
 	// Make sure we are dealing with an API request
 	if request, ok := e.Data.(api.DocumentRequest); ok {
-		log.Println("💐", request)
 		switch request.Scope {
 		case api.Find:
 			_find(e.Sender, request)
