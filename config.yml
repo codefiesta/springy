@@ -1,6 +1,0 @@
-database:
-  uri: "mongodb://localhost:27017"
-  name: "springy"
-
-server:
-  port: 8080

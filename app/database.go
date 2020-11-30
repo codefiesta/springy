@@ -8,39 +8,43 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
-	"go.springy.io/util"
 	"log"
 	"time"
 )
 
 var (
 	database *mongo.Database
-	config   *util.Configuration
 )
 
 func init() {
 
-	fmt.Println("Connecting ...")
-	config = util.Config()
-	client, err := mongo.NewClient(options.Client().ApplyURI(config.Database.Uri))
+	_ = Env()
+	// https://github.com/mongodb/mongo-go-driver/blob/master/mongo/client_examples_test.go
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	credential := options.Credential{
+		Username: env.Database.Username,
+		Password: env.Database.Password,
+	}
+	clientOptions := options.Client().
+		ApplyURI(env.Database.Uri()).
+		SetAppName(env.Database.Db).
+		SetAuth(credential).
+		SetReplicaSet(env.Database.ReplicaSet).
+		SetReadPreference(readpref.Primary())
+	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
 		panic(err)
 	}
 
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	err = client.Connect(ctx)
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	err = client.Ping(ctx, readpref.Primary())
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("💩 [Unable to ping mongo]: ", err)
 	}
-	database = client.Database(config.Database.Name)
-	databases, err := client.ListDatabaseNames(ctx, bson.M{})
+	database = client.Database(env.Database.Db)
+	databases, err := client.ListDatabaseNames(context.TODO(), bson.M{})
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("💩 [Unable to list mongo databases]: ", err)
 	}
 	fmt.Println(databases)
 }
@@ -109,11 +113,11 @@ func _find(client *Client, request *Request) {
 	collection := database.Collection(request.Collection)
 	cursor, err := collection.Find(context, bson.M{})
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("💩 [Unable to open collection]: ", err)
 	}
 	var results []bson.M
 	if err = cursor.All(context, &results); err != nil {
-		log.Fatal(err)
+		log.Fatal("💩 [Unable to open cursor]: ", err)
 	}
 
 	if request.OnDisconnect {
@@ -133,7 +137,7 @@ func _insert(client *Client, request *Request) {
 	result, err := collection.InsertOne(context.Background(), request.Value)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("💩 [Unable to insert]: ", err)
 	}
 
 	if request.OnDisconnect {
@@ -153,7 +157,7 @@ func _update(client *Client, request *Request) {
 	collection := database.Collection(request.Collection)
 	result, err := collection.UpdateOne(context.Background(), request.filter(), request.Value)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("💩 [Unable to update]: ", err)
 	}
 	if request.OnDisconnect {
 		return
@@ -172,7 +176,7 @@ func _delete(client *Client, request *Request) {
 	_, err := collection.DeleteOne(context.Background(), request.filter())
 
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("💩 [Unable to delete]: ", err)
 	}
 
 	if request.OnDisconnect {
@@ -192,7 +196,7 @@ func _replace(client *Client, request *Request) {
 	collection := database.Collection(request.Collection)
 	result, err := collection.ReplaceOne(context.Background(), request.filter(), request.Value)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("💩 [Unable to replace]: ", err)
 	}
 	if request.OnDisconnect {
 		return
@@ -220,7 +224,7 @@ func _watch(client *Client, request *Request) {
 	collectionStream, err := collection.Watch(context.TODO(), mongo.Pipeline{matchingPipeline})
 
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("💩 [Unable to watch]: ", err)
 	}
 
 	streamContext, _ := context.WithCancel(context.Background())

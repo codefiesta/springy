@@ -3,7 +3,6 @@ package http
 import (
 	"fmt"
 	"go.springy.io/app"
-	"go.springy.io/util"
 	"html/template"
 	"log"
 	"net/http"
@@ -36,8 +35,8 @@ func indexRoute(w http.ResponseWriter, r *http.Request) {
 }
 
 func Start() {
-	config := util.Config()
-	port := fmt.Sprintf(":%d", config.Server.Port)
+	env := app.Env()
+	port := fmt.Sprintf(":%d", env.Server.Port)
 	log.Println("Starting http server [", port, "]")
 	log.Fatal(http.ListenAndServe(port, nil))
 }
