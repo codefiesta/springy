@@ -4,21 +4,25 @@ services:
 
   # Springy Micro Service
   springy:
+    labels:
+      - "io.springy.service"
     build:
       context: .
       dockerfile: ./.docker/springy/Dockerfile
-    container_name: 'springy'
+    image: "springy:$DOCKER_COMPOSE_TAG"
     ports:
       - '8080:8080'
     depends_on:
       - mongo
-
-  #ADD mongo-init.sh /docker-entrypoint-initdb.d/
+    networks:
+      - local
 
   # MongoDB
   mongo:
+    labels:
+      - "io.springy.db"
     build: .docker/mongodb
-    container_name: mongodb
+    image: "springydb:$DOCKER_COMPOSE_TAG"
     hostname: mongodb
     volumes:
       - ./.docker/mongodb/mongod.conf:/etc/mongod.conf
@@ -31,37 +35,17 @@ services:
       MONGO_INITDB_USERNAME: ${MONGO_USER}
       MONGO_INITDB_PASSWORD: ${MONGO_PASSWORD}
       MONGO_INITDB_DATABASE: ${MONGO_DB}
+      MONGO_INITDB_COLLECTION: $MONGO_COLLECTION
       MONGO_REPLICA_SET_NAME: ${MONGO_REPLICA_SET}
     ports:
-      - "27017:27017"
+      - "${MONGO_PORT}:${MONGO_PORT}"
+    networks:
+      - local
     healthcheck:
       test: test $$(echo "rs.initiate().ok || rs.status().ok" | mongo -u $${MONGO_ROOT_USER} -p $${MONGO_ROOT_PASSWORD} --quiet) -eq 1
       interval: 10s
-      start_period: 30s
+      start_period: 3s
     command: ["-f", "/etc/mongod.conf", "--replSet", "${MONGO_REPLICA_SET}", "--bind_ip_all"]
 
-
-#  mongo:
-#    build:
-#      context: .docker/mongodb
-#    container_name: 'mongo'
-#    hostname: 'mongo'
-#    environment:
-#      MONGO_INITDB_ROOT_USERNAME: $MONGO_ROOT_USER
-#      MONGO_INITDB_ROOT_PASSWORD: $MONGO_ROOT_PASSWORD
-#      MONGO_INITDB_USERNAME: $MONGO_USER
-#      MONGO_INITDB_PASSWORD: $MONGO_PASSWORD
-#      MONGO_INITDB_DATABASE: $MONGO_DB
-#      MONGO_REPLICA_SET: $MONGO_REPLICA_SET
-#      MONGO_COLLECTION: $MONGO_DB
-#    ports:
-#      - '27017:27017'
-
-  # Mongo Express
-#  mongo-express:
-#    image: 'mongo-express:latest'
-#    container_name: 'mongo-express'
-#    depends_on:
-#      - mongodb
-#    ports:
-#    - '8081:8081'
+networks:
+  local:
