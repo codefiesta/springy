@@ -50,6 +50,7 @@ func Env() *Environment {
 
 		log.Println("🍃 [Configuring Springy] 🍃")
 		viper.SetConfigFile(".env")
+
 		if err := viper.ReadInConfig(); err != nil {
 			log.Fatalf("Error reading config file, %s", err)
 		}
@@ -72,8 +73,6 @@ func Env() *Environment {
 			Server:   server,
 			Database: db,
 		}
-
-		log.Println(env.Database.Uri(), env.Database.Username, env.Database.Password)
 	})
 	return env
 }

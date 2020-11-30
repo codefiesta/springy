@@ -32,5 +32,6 @@ jobs:
     - name: Build
       run: go build -v .
 
+    # Compile tests into tmp directory and execute
     - name: Test
-      run: go test -v ./...
+      run: go test -o /tmp/springy.tests -c ./tests/ && /tmp/springy.tests
