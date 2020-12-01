@@ -1,7 +1,8 @@
-package util
+package util_test
 
 import (
 	"github.com/stretchr/testify/assert"
+	"go.springy.io/pkg/util"
 	"os"
 	"path/filepath"
 	"testing"
@@ -17,7 +18,7 @@ func TestEnv(t *testing.T) {
 	root := filepath.Dir(filepath.Dir(wd))
 	os.Chdir(root)
 
-	env := Env()
+	env := util.Env()
 	assert.NotNil(t, env.Database.Db)
 	assert.Equal(t, env.Database.Port, 27017)
 	assert.NotNil(t, env.Database.Host)

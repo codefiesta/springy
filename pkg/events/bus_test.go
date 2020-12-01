@@ -12,22 +12,21 @@ type TestSender struct {
 }
 
 type TestMessage struct {
-	name string
+	name  string
 	count int
 }
 
-var messages = []TestMessage {
+var messages = []TestMessage{
 
 	{
 		name:  "Foo",
 		count: 2,
 	},
 	{
-		name: "Bar",
+		name:  "Bar",
 		count: 4,
 	},
 }
-
 
 func TestBus(t *testing.T) {
 
