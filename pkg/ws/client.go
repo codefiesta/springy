@@ -90,7 +90,7 @@ func (c *Client) read() {
 
 // write sends messages from the hub to the websocket connection.
 //
-// A goroutine running writePump is started for each connection. The
+// A goroutine running write is started for each connection. The
 // application ensures that there is at most one writer to a connection by
 // executing all writes from this goroutine.
 func (c *Client) write() {
@@ -112,7 +112,6 @@ func (c *Client) write() {
 			}
 
 			w, err := c.conn.NextWriter(websocket.TextMessage)
-			//w, err := c.conn.NextWriter(websocket.BinaryMessage)
 			if err != nil {
 				log.Print("c.conn.NextWriter", err)
 				return

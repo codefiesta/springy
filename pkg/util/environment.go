@@ -3,6 +3,7 @@ package util
 import (
 	"github.com/spf13/viper"
 	"log"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -54,6 +55,9 @@ func Env() *Environment {
 		if err := viper.ReadInConfig(); err != nil {
 			log.Fatalf("Error reading config file, %s", err)
 		}
+
+		dir, _ := os.Getwd()
+		log.Println("🎯", dir)
 
 		db := DatabaseEnv{
 			Host:       viper.GetString("MONGO_HOST"),

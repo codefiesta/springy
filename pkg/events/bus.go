@@ -29,17 +29,19 @@ func init() {
 // Subscribes to events
 func Subscribe(topic Topic, c Channel) {
 	bus.mutex.Lock()
+	defer bus.mutex.Unlock()
 	if channels, found := bus.subscribers[topic]; found {
 		bus.subscribers[topic] = append(channels, c)
 	} else {
 		bus.subscribers[topic] = append([]Channel{}, c)
 	}
-	bus.mutex.Unlock()
+
 }
 
 // Publishes events
 func Publish(topic Topic, sender interface{}, data interface{}) {
 	bus.mutex.RLock()
+	defer bus.mutex.RUnlock()
 	if chs, found := bus.subscribers[topic]; found {
 		// Create a new slice to preserve locking
 		channels := append([]Channel{}, chs...)
@@ -50,5 +52,4 @@ func Publish(topic Topic, sender interface{}, data interface{}) {
 			}
 		}(Event{Topic: topic, Sender: sender, Data: data}, channels)
 	}
-	bus.mutex.RUnlock()
 }
