@@ -1,7 +1,7 @@
 package main
 
 import (
-	"go.springy.io/http"
+	"go.springy.io/pkg/http"
 )
 
 func main() {

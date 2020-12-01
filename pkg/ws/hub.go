@@ -1,8 +1,11 @@
-package app
+package ws
 
 import (
 	"fmt"
 	"github.com/gorilla/websocket"
+	"go.springy.io/api"
+	"go.springy.io/pkg/events"
+	"log"
 	"net/http"
 	"sync"
 )
@@ -29,26 +32,24 @@ type Hub struct {
 }
 
 var (
-	shared *Hub
-	once   sync.Once
+	hub  *Hub
+	once sync.Once
 )
 
-// Our singleton instance of the hub
-func NewHub() *Hub {
-
+func init() {
+	log.Println("🌱 [Initializing Hub] 🌱")
 	once.Do(func() {
-		shared = &Hub{
+		hub = &Hub{
 			broadcast:  make(chan []byte),
 			register:   make(chan *Client),
 			unregister: make(chan *Client),
 			clients:    make(map[*Client]bool),
 		}
 	})
-	return shared
 }
 
 // Performs the ws upgrade
-func (h *Hub) Upgrade(w http.ResponseWriter, r *http.Request) {
+func Upgrade(w http.ResponseWriter, r *http.Request) {
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -56,7 +57,7 @@ func (h *Hub) Upgrade(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	client := &Client{hub: h, conn: conn, send: make(chan []byte, 256), requests: make(map[string]Request)}
+	client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256), requests: make(map[string]api.DocumentRequest)}
 	client.hub.register <- client
 
 	// Allow collection of memory referenced by the caller by doing all work in new goroutines.
@@ -64,23 +65,34 @@ func (h *Hub) Upgrade(w http.ResponseWriter, r *http.Request) {
 	go client.read()
 }
 
-func (h *Hub) Run() {
+func Run() {
+
+	// Subscribe to websocket events
+	subscriber := make(chan events.Event)
+	events.Subscribe(events.Websocket, subscriber)
+
 	for {
 		select {
-		case client := <-h.register:
-			h.clients[client] = true
-		case client := <-h.unregister:
-			if _, ok := h.clients[client]; ok {
-				delete(h.clients, client)
+		case e := <-subscriber:
+			if client, ok := e.Sender.(*Client); ok {
+				if snapshot, ok := e.Data.(api.DocumentSnapshot); ok {
+					go client.writeResponse(snapshot.Value)
+				}
+			}
+		case client := <-hub.register:
+			hub.clients[client] = true
+		case client := <-hub.unregister:
+			if _, ok := hub.clients[client]; ok {
+				delete(hub.clients, client)
 				close(client.send)
 			}
-		case message := <-h.broadcast:
-			for client := range h.clients {
+		case message := <-hub.broadcast:
+			for client := range hub.clients {
 				select {
 				case client.send <- message:
 				default:
 					close(client.send)
-					delete(h.clients, client)
+					delete(hub.clients, client)
 				}
 			}
 		}

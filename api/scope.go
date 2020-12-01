@@ -1,15 +1,15 @@
-package app
+package api
 
 import (
 	"bytes"
 	"encoding/json"
 )
 
-type Scope int
+type DocumentScope int
 
 const (
 	// Single Read Request
-	Find Scope = iota
+	Find DocumentScope = iota
 	// Single Read Request
 	FindOne
 	// Single Write Request
@@ -18,18 +18,18 @@ const (
 	Watch
 )
 
-func (scope Scope) String() string {
+func (scope DocumentScope) String() string {
 	return scopeValue[scope]
 }
 
-var scopeValue = map[Scope]string{
+var scopeValue = map[DocumentScope]string{
 	Find:    "find",
 	FindOne: "findOne",
 	Write:   "write",
 	Watch:   "watch",
 }
 
-var scopeID = map[string]Scope{
+var scopeID = map[string]DocumentScope{
 	"find":    Find,
 	"findOne": FindOne,
 	"write":   Write,
@@ -37,7 +37,7 @@ var scopeID = map[string]Scope{
 }
 
 // MarshalJSON marshals the enum as a quoted json string
-func (scope Scope) MarshalJSON() ([]byte, error) {
+func (scope DocumentScope) MarshalJSON() ([]byte, error) {
 	buffer := bytes.NewBufferString(`"`)
 	buffer.WriteString(scopeValue[scope])
 	buffer.WriteString(`"`)
@@ -45,7 +45,7 @@ func (scope Scope) MarshalJSON() ([]byte, error) {
 }
 
 // UnmarshalJSON unmashals a quoted json string to the enum value
-func (scope *Scope) UnmarshalJSON(b []byte) error {
+func (scope *DocumentScope) UnmarshalJSON(b []byte) error {
 	var j string
 	err := json.Unmarshal(b, &j)
 	if err != nil {

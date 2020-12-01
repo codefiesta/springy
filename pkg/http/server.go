@@ -2,29 +2,29 @@ package http
 
 import (
 	"fmt"
-	"go.springy.io/app"
+	"go.springy.io/pkg/db"
+	"go.springy.io/pkg/util"
+	"go.springy.io/pkg/ws"
 	"html/template"
 	"log"
 	"net/http"
 )
 
-var (
-	hub *app.Hub
-)
-
 func init() {
 
-	hub = app.NewHub()
-
 	initRoutes()
+
+	// Run the db in a new goroutine
+	go db.Run()
+
 	// Run the hub in a new goroutine
-	go hub.Run()
+	go ws.Run()
 }
 
 // Initialize the http routes
 func initRoutes() {
 	http.HandleFunc("/", indexRoute)
-	http.HandleFunc("/ws", hub.Upgrade)
+	http.HandleFunc("/ws", ws.Upgrade)
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./web/static"))))
 }
 
@@ -35,8 +35,8 @@ func indexRoute(w http.ResponseWriter, r *http.Request) {
 }
 
 func Start() {
-	env := app.Env()
+	env := util.Env()
 	port := fmt.Sprintf(":%d", env.Server.Port)
-	log.Println("Starting http server [", port, "]")
+	log.Printf("🌱 [Starting http server %s] 🌱", port)
 	log.Fatal(http.ListenAndServe(port, nil))
 }

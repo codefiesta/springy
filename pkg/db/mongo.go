@@ -1,24 +1,28 @@
-package app
+package db
 
 import (
 	"context"
-	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
+	"go.springy.io/api"
+	"go.springy.io/pkg/events"
+	"go.springy.io/pkg/util"
 	"log"
 	"time"
 )
 
 var (
 	database *mongo.Database
+	env      *util.Environment
 )
 
 func init() {
+	log.Println("🌱 [Initializing MongoDB] 🌱")
+	env = util.Env()
 
-	_ = Env()
 	// https://github.com/mongodb/mongo-go-driver/blob/master/mongo/client_examples_test.go
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -46,45 +50,66 @@ func init() {
 	if err != nil {
 		log.Fatal("💩 [Unable to list mongo databases]: ", err)
 	}
-	fmt.Println(databases)
+	log.Println("🌱", databases, "🌱")
 }
 
-func processRequest(client *Client, request *Request) {
-
-	switch request.Scope {
-	case Find:
-		_find(client, request)
-		break
-	case FindOne:
-		_findOne(client, request)
-	case Write:
-		// Performs a single CRUD operation
-		switch request.Operation {
-		case Insert:
-			_insert(client, request)
-			break
-		case Update:
-			_update(client, request)
-			break
-		case Delete:
-			_delete(client, request)
-			break
-		case Replace:
-			_replace(client, request)
-			break
+func Run() {
+	subscriber := make(chan events.Event)
+	events.Subscribe(events.Mongo, subscriber)
+	for {
+		select {
+		case e := <-subscriber:
+			go handle(e)
 		}
-		break
-	case Watch:
-		// Performs a change stream watch
-		_watch(client, request)
-		break
 	}
 }
 
-func _findOne(client *Client, request *Request) {
+// Processes a document request event
+func handle(e events.Event) {
+	// Make sure we are dealing with an API request
+	if request, ok := e.Data.(api.DocumentRequest); ok {
+		switch request.Scope {
+		case api.Find:
+			_find(e.Sender, request)
+			break
+		case api.FindOne:
+			_findOne(e.Sender, request)
+		case api.Write:
+			// Performs a single CRUD operation
+			switch request.Operation {
+			case api.Insert:
+				_insert(e.Sender, request)
+				break
+			case api.Update:
+				_update(e.Sender, request)
+				break
+			case api.Delete:
+				_delete(e.Sender, request)
+				break
+			case api.Replace:
+				_replace(e.Sender, request)
+				break
+			}
+			break
+		case api.Watch:
+			// Performs a change stream watch
+			_watch(e.Sender, request)
+			break
+		}
+	}
+}
+
+func publish(sender interface{}, doc bson.M) {
+	snapshot := api.DocumentSnapshot{
+		Value: doc,
+	}
+	go events.Publish(events.Websocket, sender, snapshot)
+}
+
+func _findOne(sender interface{}, request api.DocumentRequest) {
 	context := context.Background()
 	collection := database.Collection(request.Collection)
-	result := collection.FindOne(context, request.filter())
+	result := collection.FindOne(context, request.Filter())
 
 	doc := bson.M{}
 	if result.Err() == mongo.ErrNoDocuments {
@@ -99,15 +124,15 @@ func _findOne(client *Client, request *Request) {
 		}
 	}
 
-	var response = bson.M{
+	snapshot := bson.M{
 		"_uid":       request.Uid,
 		"_operation": request.Operation,
 		"value":      doc,
 	}
-	go client.writeResponse(response)
+	publish(sender, snapshot)
 }
 
-func _find(client *Client, request *Request) {
+func _find(sender interface{}, request api.DocumentRequest) {
 
 	context := context.Background()
 	collection := database.Collection(request.Collection)
@@ -124,15 +149,15 @@ func _find(client *Client, request *Request) {
 		return
 	}
 
-	var response = bson.M{
+	snapshot := bson.M{
 		"_uid":       request.Uid,
 		"_operation": request.Operation,
 		"value":      results,
 	}
-	go client.writeResponse(response)
+	publish(sender, snapshot)
 }
 
-func _insert(client *Client, request *Request) {
+func _insert(sender interface{}, request api.DocumentRequest) {
 	collection := database.Collection(request.Collection)
 	result, err := collection.InsertOne(context.Background(), request.Value)
 
@@ -145,17 +170,18 @@ func _insert(client *Client, request *Request) {
 	}
 
 	request.Value["_id"] = result.InsertedID
-	var response = bson.M{
+
+	snapshot := bson.M{
 		"_uid":       request.Uid,
 		"_operation": request.Operation,
 		"value":      request.Value,
 	}
-	go client.writeResponse(response)
+	publish(sender, snapshot)
 }
 
-func _update(client *Client, request *Request) {
+func _update(sender interface{}, request api.DocumentRequest) {
 	collection := database.Collection(request.Collection)
-	result, err := collection.UpdateOne(context.Background(), request.filter(), request.Value)
+	result, err := collection.UpdateOne(context.Background(), request.Filter(), request.Value)
 	if err != nil {
 		log.Fatal("💩 [Unable to update]: ", err)
 	}
@@ -163,17 +189,18 @@ func _update(client *Client, request *Request) {
 		return
 	}
 	request.Value["_id"] = result.UpsertedID
-	var response = bson.M{
+
+	snapshot := bson.M{
 		"_uid":       request.Uid,
 		"_operation": request.Operation,
 		"value":      request.Value,
 	}
-	go client.writeResponse(response)
+	publish(sender, snapshot)
 }
 
-func _delete(client *Client, request *Request) {
+func _delete(sender interface{}, request api.DocumentRequest) {
 	collection := database.Collection(request.Collection)
-	_, err := collection.DeleteOne(context.Background(), request.filter())
+	_, err := collection.DeleteOne(context.Background(), request.Filter())
 
 	if err != nil {
 		log.Fatal("💩 [Unable to delete]: ", err)
@@ -183,35 +210,38 @@ func _delete(client *Client, request *Request) {
 		return
 	}
 
-	var response = bson.M{
+	snapshot := bson.M{
 		"_uid":       request.Uid,
 		"_operation": request.Operation,
 		"value":      request.Query,
 	}
 
-	go client.writeResponse(response)
+	publish(sender, snapshot)
 }
 
-func _replace(client *Client, request *Request) {
+func _replace(sender interface{}, request api.DocumentRequest) {
 	collection := database.Collection(request.Collection)
-	result, err := collection.ReplaceOne(context.Background(), request.filter(), request.Value)
+	result, err := collection.ReplaceOne(context.Background(), request.Filter(), request.Value)
 	if err != nil {
 		log.Fatal("💩 [Unable to replace]: ", err)
 	}
+
 	if request.OnDisconnect {
 		return
 	}
+
 	request.Value["_id"] = result.UpsertedID
-	var response = bson.M{
+
+	snapshot := bson.M{
 		"_uid":       request.Uid,
 		"_operation": request.Operation,
 		"value":      request.Value,
 	}
-	go client.writeResponse(response)
+	publish(sender, snapshot)
 }
 
 // Starts watching (observing) a change stream
-func _watch(client *Client, request *Request) {
+func _watch(sender interface{}, request api.DocumentRequest) {
 
 	var matchingPipeline = bson.D{
 		{
@@ -228,10 +258,10 @@ func _watch(client *Client, request *Request) {
 	}
 
 	streamContext, _ := context.WithCancel(context.Background())
-	go _watchChangeStream(client, request, streamContext, collectionStream)
+	go _watchChangeStream(sender, request, streamContext, collectionStream)
 }
 
-func _watchChangeStream(client *Client, request *Request, context context.Context, stream *mongo.ChangeStream) {
+func _watchChangeStream(sender interface{}, request api.DocumentRequest, context context.Context, stream *mongo.ChangeStream) {
 	defer stream.Close(context)
 	for stream.Next(context) {
 		var data bson.M
@@ -244,11 +274,11 @@ func _watchChangeStream(client *Client, request *Request, context context.Contex
 
 		if doc == nil {
 			switch request.Operation {
-			case Update, Replace:
+			case api.Update, api.Replace:
 				request.Query["_id"] = key["_id"].(primitive.ObjectID).Hex()
-				_findOne(client, request)
+				_findOne(sender, request)
 				return
-			case Delete:
+			case api.Delete:
 				doc = bson.M{
 					"_id": key["_id"],
 				}
@@ -258,11 +288,11 @@ func _watchChangeStream(client *Client, request *Request, context context.Contex
 			}
 		}
 
-		var response = bson.M{
+		snapshot := bson.M{
 			"_uid":       request.Uid,
 			"_operation": request.Operation,
 			"value":      doc,
 		}
-		go client.writeResponse(response)
+		publish(sender, snapshot)
 	}
 }

@@ -1,16 +1,17 @@
-package app
+package util
 
 import (
 	"github.com/spf13/viper"
 	"log"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
 )
 
 var (
-	env     *Environment
-	envOnce sync.Once
+	env  *Environment
+	once sync.Once
 )
 
 type ServerEnv struct {
@@ -46,14 +47,17 @@ func (e *DatabaseEnv) Uri() string {
 //Our singleton instance of the Environment
 func Env() *Environment {
 
-	envOnce.Do(func() {
+	once.Do(func() {
 
-		log.Println("🍃 [Configuring Springy] 🍃")
+		log.Println("🌱 [Configuring Springy] 🌱")
 		viper.SetConfigFile(".env")
 
 		if err := viper.ReadInConfig(); err != nil {
 			log.Fatalf("Error reading config file, %s", err)
 		}
+
+		dir, _ := os.Getwd()
+		log.Println("🎯", dir)
 
 		db := DatabaseEnv{
 			Host:       viper.GetString("MONGO_HOST"),

@@ -1,9 +1,11 @@
-package app
+package ws
 
 import (
 	"bytes"
 	"encoding/json"
 	"github.com/gorilla/websocket"
+	"go.springy.io/api"
+	"go.springy.io/pkg/events"
 	"log"
 	"time"
 )
@@ -41,7 +43,7 @@ type Client struct {
 	send chan []byte
 
 	// Deferred requests to process onDisconnect
-	requests map[string]Request
+	requests map[string]api.DocumentRequest
 }
 
 // read sends messages from the websocket connection to the hub.
@@ -56,7 +58,8 @@ func (c *Client) read() {
 
 		// Process our onDisconnect requests
 		for k, v := range c.requests {
-			go processRequest(c, &v)
+			// Publish event to mongo
+			go events.Publish(events.Mongo, c, v)
 			delete(c.requests, k)
 		}
 	}()
@@ -68,7 +71,7 @@ func (c *Client) read() {
 	for {
 
 		// Parse the request and send it to Mongo
-		request := Request{}
+		request := api.DocumentRequest{}
 		err := c.conn.ReadJSON(&request)
 		if err != nil {
 			log.Printf("error: %v", err)
@@ -80,14 +83,14 @@ func (c *Client) read() {
 			c.requests[request.Uid] = request
 		} else {
 			// Immediately process the requests
-			processRequest(c, &request)
+			go events.Publish(events.Mongo, c, request)
 		}
 	}
 }
 
 // write sends messages from the hub to the websocket connection.
 //
-// A goroutine running writePump is started for each connection. The
+// A goroutine running write is started for each connection. The
 // application ensures that there is at most one writer to a connection by
 // executing all writes from this goroutine.
 func (c *Client) write() {
@@ -109,7 +112,6 @@ func (c *Client) write() {
 			}
 
 			w, err := c.conn.NextWriter(websocket.TextMessage)
-			//w, err := c.conn.NextWriter(websocket.BinaryMessage)
 			if err != nil {
 				log.Print("c.conn.NextWriter", err)
 				return
