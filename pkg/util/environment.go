@@ -3,6 +3,7 @@ package util
 import (
 	"github.com/spf13/viper"
 	"log"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -50,6 +51,9 @@ func Env() *Environment {
 
 		log.Println("🍃 [Configuring Springy] 🍃")
 		viper.SetConfigFile(".env")
+
+		dir, _ := os.Getwd()
+		log.Println("🎯", dir)
 
 		if err := viper.ReadInConfig(); err != nil {
 			log.Fatalf("Error reading config file, %s", err)
