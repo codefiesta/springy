@@ -30,9 +30,8 @@ jobs:
         fi
 
     - name: Build
-#      run: echo "Building"
-       run: go build -v .
+      run: go build -v .
 
     # Compile tests into tmp directory and execute
     - name: Test
-      run  go test -v ./...
+      run:  go test -v ./...
