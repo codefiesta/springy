@@ -8,4 +8,3 @@ type Event struct {
 
 // Channel is a channel which can accept an Event
 type Channel chan Event
-

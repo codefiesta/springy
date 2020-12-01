@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	env     *Environment
+	env  *Environment
 	once sync.Once
 )
 
