@@ -37,7 +37,7 @@ var (
 )
 
 func init() {
-	log.Println("❉ [Initializing Hub] ❉")
+	log.Println("🌱 [Initializing Hub] 🌱")
 	once.Do(func() {
 		hub = &Hub{
 			broadcast:  make(chan []byte),

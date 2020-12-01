@@ -37,6 +37,6 @@ func indexRoute(w http.ResponseWriter, r *http.Request) {
 func Start() {
 	env := util.Env()
 	port := fmt.Sprintf(":%d", env.Server.Port)
-	log.Println("🤙 Starting http server [", port, "]")
+	log.Printf("🌱 [Starting http server %s] 🌱", port)
 	log.Fatal(http.ListenAndServe(port, nil))
 }

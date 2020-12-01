@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	log.Println("Initializing Database")
+	log.Println("🌱 [Initializing MongoDB] 🌱")
 	env = util.Env()
 
 	// https://github.com/mongodb/mongo-go-driver/blob/master/mongo/client_examples_test.go
@@ -50,7 +50,7 @@ func init() {
 	if err != nil {
 		log.Fatal("💩 [Unable to list mongo databases]: ", err)
 	}
-	log.Println("🌴", databases)
+	log.Println("🌱", databases, "🌱")
 }
 
 func Run() {
