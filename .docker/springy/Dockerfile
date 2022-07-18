@@ -2,7 +2,7 @@
 # Spring Microservice Dockerfile
 #
 
-FROM golang:1.15.1-alpine
+FROM golang:1.18.4-alpine
 
 LABEL maintainer="Springy.io <springy@spring.io>"
 

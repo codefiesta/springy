@@ -19,9 +19,8 @@ mongo <<EOF
   db.createUser({
     user: "$MONGO_INITDB_USERNAME",
     pwd: "$MONGO_INITDB_PASSWORD",
-    roles: ["readWrite", db: "$$MONGO_INITDB_DATABASE"]
+    roles: ["readWrite", db: "$MONGO_INITDB_DATABASE"]
   });
   use $MONGO_INITDB_DATABASE;
   db.createCollection("$MONGO_INITDB_COLLECTION");
 EOF
-
