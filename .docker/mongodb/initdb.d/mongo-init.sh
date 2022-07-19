@@ -14,19 +14,19 @@ set -e;
 
 # a default non-root role
 echo "🐳🐳🐳🐳🐳🐳🐳🐳🐳🐳🐳🐳 [Initializing MongoDB] 🐳🐳🐳🐳🐳🐳🐳🐳🐳🐳🐳🐳"
-MONGO_USER_ROLE="readWrite"
+MONGO_USER_ROLE="dbOwner"
 
 # Create a default user with the readWrite role in the $MONGO_INITDB_DATABASE database.
 mongosh <<-EOJS
   print("🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱 [Seeding MongoDB] 🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱");
   use admin;
   db.auth("$MONGO_INITDB_ROOT_USERNAME", "$MONGO_INITDB_ROOT_PASSWORD");
-  db = db.getSiblingDB("$MONGO_INITDB_DATABASE");
+  use $MONGO_INITDB_DATABASE;
   db.createCollection("$MONGO_COLLECTION");
 	db.createUser({
 		user: "$MONGO_INITDB_USERNAME",
-		pwd: "$MONGO_INITDB_ROOT_PASSWORD",
-		roles: [ { role: "$MONGO_USER_ROLE", db: "$MONGO_INITDB_DATABASE" } ]
+		pwd: "$MONGO_INITDB_PASSWORD",
+    roles: [ { role: "$MONGO_USER_ROLE", db: "$MONGO_INITDB_DATABASE" } ],
 	});
   db.getUser("$MONGO_INITDB_USERNAME");
 EOJS
