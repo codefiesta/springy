@@ -26,17 +26,25 @@ func init() {
 	// https://github.com/mongodb/mongo-go-driver/blob/master/mongo/client_examples_test.go
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
+
 	credential := options.Credential{
-		Username: env.Database.Username,
-		Password: env.Database.Password,
+		AuthSource: env.Database.Db,
+		Username:   env.Database.Username,
+		Password:   env.Database.Password,
 	}
+
+	uri := env.Database.GetURI()
+
 	clientOptions := options.Client().
-		ApplyURI(env.Database.Uri()).
+		SetHosts([]string{uri}).
+		SetDirect(true).
 		SetAppName(env.Database.Db).
 		SetAuth(credential).
 		SetReplicaSet(env.Database.ReplicaSet).
 		SetReadPreference(readpref.Primary())
+
 	client, err := mongo.Connect(ctx, clientOptions)
+
 	if err != nil {
 		panic(err)
 	}
@@ -45,6 +53,7 @@ func init() {
 	if err != nil {
 		log.Fatal("💩 [Unable to ping mongo]: ", err)
 	}
+
 	database = client.Database(env.Database.Db)
 	databases, err := client.ListDatabaseNames(context.TODO(), bson.M{})
 	if err != nil {
