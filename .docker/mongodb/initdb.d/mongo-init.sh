@@ -20,6 +20,7 @@ MONGO_USER_ROLE="dbOwner"
 mongosh <<-EOJS
   print("🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱 [Seeding MongoDB] 🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱");
   use admin;
+  rs.status();
   db.auth("$MONGO_INITDB_ROOT_USERNAME", "$MONGO_INITDB_ROOT_PASSWORD");
   use $MONGO_INITDB_DATABASE;
   db.createCollection("$MONGO_COLLECTION");

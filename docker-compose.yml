@@ -17,7 +17,8 @@ services:
     networks:
       - local
 
-  # MongoDB
+  # MongoDB w/ Replication
+  # See https://www.sohamkamani.com/docker/mongo-replica-set/
   mongo:
     labels:
       - "io.springy.db"
@@ -41,6 +42,11 @@ services:
       - "${MONGO_PORT}:${MONGO_PORT}"
     networks:
       - local
+    healthcheck:
+      test: test $$(echo "rs.initiate().ok || rs.status().ok" | mongo -u $${MONGO_ROOT_USER} -p $${MONGO_ROOT_PASSWORD} --quiet) -eq 1
+      interval: 30s
+      start_period: 3s
+    command: ["--config", "/etc/mongod.conf"]
 
 networks:
   local:
