@@ -22,6 +22,6 @@ func TestEnv(t *testing.T) {
 	assert.NotNil(t, env.Database.Db)
 	assert.Equal(t, env.Database.Port, 27017)
 	assert.NotNil(t, env.Database.Host)
-	assert.NotNil(t, env.Database.Uri())
+	assert.NotNil(t, env.Database.GetURI())
 	assert.Equal(t, env.Server.Port, 8080)
 }
