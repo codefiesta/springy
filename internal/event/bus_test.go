@@ -2,7 +2,7 @@ package event_test
 
 import (
 	"github.com/stretchr/testify/assert"
-	"go.springy.io/pkg/event"
+	"go.springy.io/internal/event"
 	"sync"
 	"testing"
 )
