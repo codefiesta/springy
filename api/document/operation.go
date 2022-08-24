@@ -1,4 +1,4 @@
-package api
+package document
 
 import (
 	"bytes"
@@ -7,6 +7,7 @@ import (
 
 type DocumentOperation int
 
+// Represents the type of operation to perform on a document
 const (
 	Insert DocumentOperation = iota
 	Update

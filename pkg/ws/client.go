@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"github.com/gorilla/websocket"
-	"go.springy.io/api"
+	"go.springy.io/api/document"
 	"go.springy.io/pkg/events"
 	"log"
 	"time"
@@ -43,7 +43,7 @@ type Client struct {
 	send chan []byte
 
 	// Deferred requests to process onDisconnect
-	requests map[string]api.DocumentRequest
+	requests map[string]document.DocumentRequest
 }
 
 // read sends messages from the websocket connection to the hub.
@@ -71,7 +71,7 @@ func (c *Client) read() {
 	for {
 
 		// Parse the request and send it to Mongo
-		request := api.DocumentRequest{}
+		request := document.DocumentRequest{}
 		err := c.conn.ReadJSON(&request)
 		if err != nil {
 			log.Printf("error: %v", err)

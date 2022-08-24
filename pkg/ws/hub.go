@@ -3,7 +3,7 @@ package ws
 import (
 	"fmt"
 	"github.com/gorilla/websocket"
-	"go.springy.io/api"
+	"go.springy.io/api/document"
 	"go.springy.io/pkg/events"
 	"log"
 	"net/http"
@@ -57,7 +57,7 @@ func Upgrade(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256), requests: make(map[string]api.DocumentRequest)}
+	client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256), requests: make(map[string]document.DocumentRequest)}
 	client.hub.register <- client
 
 	// Allow collection of memory referenced by the caller by doing all work in new goroutines.
@@ -75,7 +75,7 @@ func Run() {
 		select {
 		case e := <-subscriber:
 			if client, ok := e.Sender.(*Client); ok {
-				if snapshot, ok := e.Data.(api.DocumentSnapshot); ok {
+				if snapshot, ok := e.Data.(document.DocumentSnapshot); ok {
 					go client.writeResponse(snapshot.Value)
 				}
 			}

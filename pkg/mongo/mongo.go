@@ -7,7 +7,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
-	"go.springy.io/api"
+	"go.springy.io/api/document"
 	"go.springy.io/pkg/events"
 	"go.springy.io/pkg/util"
 	"log"
@@ -76,31 +76,31 @@ func Run() {
 // Processes a document request event
 func handle(e events.Event) {
 	// Make sure we are dealing with an API request
-	if request, ok := e.Data.(api.DocumentRequest); ok {
+	if request, ok := e.Data.(document.DocumentRequest); ok {
 		switch request.Scope {
-		case api.Find:
+		case document.Find:
 			_find(e.Sender, request)
 			break
-		case api.FindOne:
+		case document.FindOne:
 			_findOne(e.Sender, request)
-		case api.Write:
+		case document.Write:
 			// Performs a single CRUD operation
 			switch request.Operation {
-			case api.Insert:
+			case document.Insert:
 				_insert(e.Sender, request)
 				break
-			case api.Update:
+			case document.Update:
 				_update(e.Sender, request)
 				break
-			case api.Delete:
+			case document.Delete:
 				_delete(e.Sender, request)
 				break
-			case api.Replace:
+			case document.Replace:
 				_replace(e.Sender, request)
 				break
 			}
 			break
-		case api.Watch:
+		case document.Watch:
 			// Performs a change stream watch
 			_watch(e.Sender, request)
 			break
@@ -109,13 +109,13 @@ func handle(e events.Event) {
 }
 
 func publish(sender interface{}, doc bson.M) {
-	snapshot := api.DocumentSnapshot{
+	snapshot := document.DocumentSnapshot{
 		Value: doc,
 	}
 	go events.Publish(events.Websocket, sender, snapshot)
 }
 
-func _findOne(sender interface{}, request api.DocumentRequest) {
+func _findOne(sender interface{}, request document.DocumentRequest) {
 	context := context.Background()
 	collection := database.Collection(request.Collection)
 	result := collection.FindOne(context, request.Filter())
@@ -141,7 +141,7 @@ func _findOne(sender interface{}, request api.DocumentRequest) {
 	publish(sender, snapshot)
 }
 
-func _find(sender interface{}, request api.DocumentRequest) {
+func _find(sender interface{}, request document.DocumentRequest) {
 
 	context := context.Background()
 	collection := database.Collection(request.Collection)
@@ -166,7 +166,7 @@ func _find(sender interface{}, request api.DocumentRequest) {
 	publish(sender, snapshot)
 }
 
-func _insert(sender interface{}, request api.DocumentRequest) {
+func _insert(sender interface{}, request document.DocumentRequest) {
 	collection := database.Collection(request.Collection)
 	result, err := collection.InsertOne(context.Background(), request.Value)
 
@@ -188,7 +188,7 @@ func _insert(sender interface{}, request api.DocumentRequest) {
 	publish(sender, snapshot)
 }
 
-func _update(sender interface{}, request api.DocumentRequest) {
+func _update(sender interface{}, request document.DocumentRequest) {
 	collection := database.Collection(request.Collection)
 	result, err := collection.UpdateOne(context.Background(), request.Filter(), request.Value)
 	if err != nil {
@@ -207,7 +207,7 @@ func _update(sender interface{}, request api.DocumentRequest) {
 	publish(sender, snapshot)
 }
 
-func _delete(sender interface{}, request api.DocumentRequest) {
+func _delete(sender interface{}, request document.DocumentRequest) {
 	collection := database.Collection(request.Collection)
 	_, err := collection.DeleteOne(context.Background(), request.Filter())
 
@@ -228,7 +228,7 @@ func _delete(sender interface{}, request api.DocumentRequest) {
 	publish(sender, snapshot)
 }
 
-func _replace(sender interface{}, request api.DocumentRequest) {
+func _replace(sender interface{}, request document.DocumentRequest) {
 	collection := database.Collection(request.Collection)
 	result, err := collection.ReplaceOne(context.Background(), request.Filter(), request.Value)
 	if err != nil {
@@ -250,7 +250,7 @@ func _replace(sender interface{}, request api.DocumentRequest) {
 }
 
 // Starts watching (observing) a change stream
-func _watch(sender interface{}, request api.DocumentRequest) {
+func _watch(sender interface{}, request document.DocumentRequest) {
 
 	var matchingPipeline = bson.D{
 		{
@@ -270,7 +270,7 @@ func _watch(sender interface{}, request api.DocumentRequest) {
 	go _watchChangeStream(sender, request, streamContext, collectionStream)
 }
 
-func _watchChangeStream(sender interface{}, request api.DocumentRequest, context context.Context, stream *mongo.ChangeStream) {
+func _watchChangeStream(sender interface{}, request document.DocumentRequest, context context.Context, stream *mongo.ChangeStream) {
 	defer stream.Close(context)
 	for stream.Next(context) {
 		var data bson.M
@@ -283,11 +283,11 @@ func _watchChangeStream(sender interface{}, request api.DocumentRequest, context
 
 		if doc == nil {
 			switch request.Operation {
-			case api.Update, api.Replace:
+			case document.Update, document.Replace:
 				request.Query["_id"] = key["_id"].(primitive.ObjectID).Hex()
 				_findOne(sender, request)
 				return
-			case api.Delete:
+			case document.Delete:
 				doc = bson.M{
 					"_id": key["_id"],
 				}
