@@ -2,7 +2,7 @@ package http
 
 import (
 	"fmt"
-	"go.springy.io/pkg/db"
+	"go.springy.io/pkg/mongo"
 	"go.springy.io/pkg/util"
 	"go.springy.io/pkg/ws"
 	"html/template"
@@ -15,7 +15,7 @@ func init() {
 	initRoutes()
 
 	// Run the db in a new goroutine
-	go db.Run()
+	go mongo.Run()
 
 	// Run the hub in a new goroutine
 	go ws.Run()

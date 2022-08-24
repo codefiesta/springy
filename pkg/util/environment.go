@@ -33,13 +33,12 @@ type Environment struct {
 	Database DatabaseEnv
 }
 
-// Builds the fully qualified URI
-func (e *DatabaseEnv) Uri() string {
-	uri := strings.Join([]string{"mongodb://",
+// Builds the fully qualified host URI
+func (e *DatabaseEnv) GetURI() string {
+	uri := strings.Join([]string{
 		e.Host,
 		":",
 		strconv.Itoa(e.Port),
-		"/?connect=direct",
 	}, "")
 	return uri
 }
@@ -64,8 +63,8 @@ func Env() *Environment {
 			Port:       viper.GetInt("MONGO_PORT"),
 			Db:         viper.GetString("MONGO_DB"),
 			Collection: viper.GetString("MONGO_COLLECTION"),
-			Username:   viper.GetString("MONGO_ROOT_USER"),
-			Password:   viper.GetString("MONGO_ROOT_PASSWORD"),
+			Username:   viper.GetString("MONGO_USER"),
+			Password:   viper.GetString("MONGO_PASSWORD"),
 			ReplicaSet: viper.GetString("MONGO_REPLICA_SET"),
 		}
 
