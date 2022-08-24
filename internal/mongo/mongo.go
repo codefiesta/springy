@@ -8,7 +8,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"go.springy.io/api/document"
-	"go.springy.io/pkg/events"
+	"go.springy.io/internal/events"
 	"go.springy.io/pkg/util"
 	"log"
 	"time"

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/gorilla/websocket"
 	"go.springy.io/api/document"
-	"go.springy.io/pkg/events"
+	"go.springy.io/internal/events"
 	"log"
 	"net/http"
 	"sync"
