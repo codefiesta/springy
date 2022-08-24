@@ -8,7 +8,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"go.springy.io/api/document"
-	"go.springy.io/internal/events"
+	"go.springy.io/internal/event"
 	"go.springy.io/pkg/util"
 	"log"
 	"time"
@@ -63,8 +63,8 @@ func init() {
 }
 
 func Run() {
-	subscriber := make(chan events.Event)
-	events.Subscribe(events.Mongo, subscriber)
+	subscriber := make(chan event.Event)
+	event.Subscribe(event.Mongo, subscriber)
 	for {
 		select {
 		case e := <-subscriber:
@@ -74,7 +74,7 @@ func Run() {
 }
 
 // Processes a document request event
-func handle(e events.Event) {
+func handle(e event.Event) {
 	// Make sure we are dealing with an API request
 	if request, ok := e.Data.(document.DocumentRequest); ok {
 		switch request.Scope {
@@ -112,7 +112,7 @@ func publish(sender interface{}, doc bson.M) {
 	snapshot := document.DocumentSnapshot{
 		Value: doc,
 	}
-	go events.Publish(events.Websocket, sender, snapshot)
+	go event.Publish(event.Websocket, sender, snapshot)
 }
 
 func _findOne(sender interface{}, request document.DocumentRequest) {

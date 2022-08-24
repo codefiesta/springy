@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"github.com/gorilla/websocket"
 	"go.springy.io/api/document"
-	"go.springy.io/internal/events"
+	"go.springy.io/internal/event"
 	"log"
 	"time"
 )
@@ -59,7 +59,7 @@ func (c *Client) read() {
 		// Process our onDisconnect requests
 		for k, v := range c.requests {
 			// Publish event to mongo
-			go events.Publish(events.Mongo, c, v)
+			go event.Publish(event.Mongo, c, v)
 			delete(c.requests, k)
 		}
 	}()
@@ -83,7 +83,7 @@ func (c *Client) read() {
 			c.requests[request.Uid] = request
 		} else {
 			// Immediately process the requests
-			go events.Publish(events.Mongo, c, request)
+			go event.Publish(event.Mongo, c, request)
 		}
 	}
 }

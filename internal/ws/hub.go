@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/gorilla/websocket"
 	"go.springy.io/api/document"
-	"go.springy.io/internal/events"
+	"go.springy.io/internal/event"
 	"log"
 	"net/http"
 	"sync"
@@ -68,8 +68,8 @@ func Upgrade(w http.ResponseWriter, r *http.Request) {
 func Run() {
 
 	// Subscribe to websocket events
-	subscriber := make(chan events.Event)
-	events.Subscribe(events.Websocket, subscriber)
+	subscriber := make(chan event.Event)
+	event.Subscribe(event.Websocket, subscriber)
 
 	for {
 		select {
