@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"github.com/gorilla/websocket"
-	"go.springy.io/api"
-	"go.springy.io/pkg/events"
+	"go.springy.io/api/document"
+	"go.springy.io/internal/event"
 	"log"
 	"time"
 )
@@ -43,7 +43,7 @@ type Client struct {
 	send chan []byte
 
 	// Deferred requests to process onDisconnect
-	requests map[string]api.DocumentRequest
+	requests map[string]document.DocumentRequest
 }
 
 // read sends messages from the websocket connection to the hub.
@@ -59,7 +59,7 @@ func (c *Client) read() {
 		// Process our onDisconnect requests
 		for k, v := range c.requests {
 			// Publish event to mongo
-			go events.Publish(events.Mongo, c, v)
+			go event.Publish(event.Mongo, c, v)
 			delete(c.requests, k)
 		}
 	}()
@@ -71,7 +71,7 @@ func (c *Client) read() {
 	for {
 
 		// Parse the request and send it to Mongo
-		request := api.DocumentRequest{}
+		request := document.DocumentRequest{}
 		err := c.conn.ReadJSON(&request)
 		if err != nil {
 			log.Printf("error: %v", err)
@@ -83,7 +83,7 @@ func (c *Client) read() {
 			c.requests[request.Uid] = request
 		} else {
 			// Immediately process the requests
-			go events.Publish(events.Mongo, c, request)
+			go event.Publish(event.Mongo, c, request)
 		}
 	}
 }

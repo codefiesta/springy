@@ -1,8 +1,8 @@
-package events_test
+package event_test
 
 import (
 	"github.com/stretchr/testify/assert"
-	"go.springy.io/pkg/events"
+	"go.springy.io/internal/event"
 	"sync"
 	"testing"
 )
@@ -32,8 +32,8 @@ func TestBus(t *testing.T) {
 
 	var wg sync.WaitGroup
 
-	s := make(chan events.Event)
-	events.Subscribe(events.Mongo, s)
+	s := make(chan event.Event)
+	event.Subscribe(event.Mongo, s)
 	go subscribe(t, s, &wg)
 
 	for i, m := range messages {
@@ -43,12 +43,12 @@ func TestBus(t *testing.T) {
 		}
 		// Block until Done is called
 		wg.Add(1)
-		events.Publish(events.Mongo, sender, m)
+		event.Publish(event.Mongo, sender, m)
 	}
 	wg.Wait()
 }
 
-func subscribe(t *testing.T, s chan events.Event, wg *sync.WaitGroup) {
+func subscribe(t *testing.T, s chan event.Event, wg *sync.WaitGroup) {
 	for {
 		select {
 		case e := <-s:

@@ -1,4 +1,4 @@
-package api
+package document
 
 // Encapsulates a snapshot of a document in time
 type DocumentSnapshot struct {

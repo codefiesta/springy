@@ -2,9 +2,9 @@ package http
 
 import (
 	"fmt"
-	"go.springy.io/pkg/mongo"
+	"go.springy.io/internal/mongo"
+	"go.springy.io/internal/ws"
 	"go.springy.io/pkg/util"
-	"go.springy.io/pkg/ws"
 	"html/template"
 	"log"
 	"net/http"
