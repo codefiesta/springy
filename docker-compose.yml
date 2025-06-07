@@ -1,0 +1,52 @@
+version: '3.4'
+
+services:
+
+  # Springy Micro Service
+  springy:
+    labels:
+      - "io.springy.service"
+    build:
+      context: .
+      dockerfile: ./.docker/springy/Dockerfile
+    image: "springy:$DOCKER_COMPOSE_TAG"
+    ports:
+      - '8080:8080'
+    depends_on:
+      - mongo
+    networks:
+      - local
+
+  # MongoDB w/ Replication
+  # See https://www.sohamkamani.com/docker/mongo-replica-set/
+  mongo:
+    labels:
+      - "io.springy.db"
+    build: .docker/mongodb
+    image: "springydb:$DOCKER_COMPOSE_TAG"
+    hostname: mongodb
+    volumes:
+      - ./.docker/mongodb/mongod.conf:/etc/mongod.conf
+      - ./.docker/mongodb/initdb.d/:/docker-entrypoint-initdb.d/
+    env_file:
+      - .env
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      MONGO_INITDB_USERNAME: ${MONGO_USER}
+      MONGO_INITDB_PASSWORD: ${MONGO_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_DB}
+      MONGO_INITDB_COLLECTION: ${MONGO_COLLECTION}
+      MONGO_REPLICA_SET_NAME: ${MONGO_REPLICA_SET}
+    ports:
+      - "${MONGO_PORT}:${MONGO_PORT}"
+    networks:
+      - local
+    healthcheck:
+      test: test $$(echo "rs.initiate().ok || rs.status().ok" | mongo -u $${MONGO_ROOT_USER} -p $${MONGO_ROOT_PASSWORD} --quiet) -eq 1
+      interval: 30s
+      start_period: 3s
+    command: ["--config", "/etc/mongod.conf"]
+
+networks:
+  local:
